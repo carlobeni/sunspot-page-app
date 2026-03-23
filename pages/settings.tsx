@@ -221,7 +221,6 @@ export default function SettingsPage() {
           {[
             { id: "general", name: "Conectividad", icon: Network },
             { id: "accounts", name: "Gestión de Cuentas", icon: Users },
-            { id: "system", name: "Información del Sistema", icon: Server },
           ].map((tab) => {
             const Icon = tab.icon;
             return (
@@ -440,34 +439,6 @@ export default function SettingsPage() {
                   )}
                 </div>
               </div>
-            )}
-
-            {/* Sistema */}
-            {activeTab === "system" && (
-               <div className="p-8 space-y-8 animate-in fade-in duration-300">
-                  <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-                    <Server className="h-6 w-6 text-red-600" />
-                    <h2 className="text-xl font-serif font-bold text-slate-900">Información del Sistema</h2>
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-900">Arquitectura</h3>
-                      <p className="mt-1 text-sm text-slate-500 font-mono">Raspberry Pi 5 / 8GB RAM</p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-900">Modelos AI</h3>
-                      <p className="mt-1 text-sm text-slate-500 font-mono">ONNX Runtime (GPU/NPU Accel)</p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-900">Versión del Panel</h3>
-                      <p className="mt-1 text-sm text-slate-500 font-mono">v1.0.0-beta</p>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-900">Desarrollo</h3>
-                      <p className="mt-1 text-sm text-slate-500 italic">Facultad de Ingeniería (FIUNA)</p>
-                    </div>
-                  </div>
-               </div>
             )}
           </div>
         </div>

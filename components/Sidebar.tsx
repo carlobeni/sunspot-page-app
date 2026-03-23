@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Camera, Database, Activity, Settings, View, Menu, X, LogOut } from "lucide-react";
+import { Camera, Database, Activity, Settings, View, Menu, X, LogOut, Info } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -16,6 +16,7 @@ const navItems = [
   { name: "Dataset", href: "/dataset", icon: Database },
   { name: "Tendencias", href: "/trends", icon: Activity },
   { name: "Ajustes", href: "/settings", icon: Settings },
+  { name: "Información", href: "/info", icon: Info },
 ];
 
 export function Sidebar() {
