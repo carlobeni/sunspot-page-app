@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { View, Loader2 } from "lucide-react";
+import { View, Loader2, UserPlus, Globe } from "lucide-react";
 import { useState, useTransition } from "react";
 
 export default function RegisterPage() {
@@ -16,85 +16,90 @@ export default function RegisterPage() {
     
     setTimeout(() => {
       startTransition(() => {
-        router.push("/camera");
+        router.push("/login");
       });
-    }, 600);
+    }, 1000);
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-sm border border-slate-200">
+    <div className="min-h-screen flex items-center justify-center bg-[#020617] py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Decorative Noir Background Element */}
+      <div className="absolute bottom-0 left-0 p-32 opacity-[0.02] -rotate-12 -translate-x-32 translate-y-32">
+        <Globe className="h-[40rem] w-[40rem] text-white" />
+      </div>
+
+      <div className="max-w-md w-full space-y-12 bg-slate-900 p-12 rounded-2xl shadow-2xl border border-slate-800 relative z-10">
         <div className="flex flex-col items-center">
-          <View className="h-10 w-10 text-red-600 mb-6" strokeWidth={1.5} />
-          <h2 className="text-center text-3xl font-serif font-bold tracking-tight text-slate-900">
-            Registro Institucional
+          <div className="w-16 h-16 bg-black border border-slate-800 flex items-center justify-center mb-8">
+            <UserPlus className="h-8 w-8 text-white" strokeWidth={1} />
+          </div>
+          <h2 className="text-center text-3xl font-serif font-black tracking-widest text-white uppercase">
+            Registro
           </h2>
-          <p className="mt-2 text-center text-sm text-slate-500 italic">
-            Solicita acceso al panel de administración
+          <p className="mt-4 text-center text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] italic leading-relaxed">
+            Solicitud de Acceso al Nodo Central
           </p>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleRegister}>
-          <div className="space-y-4">
-            <div>
-              <label htmlFor="name" className="block text-sm font-medium text-slate-700 mb-1">Nombre Completo</label>
+
+        <form className="mt-10 space-y-8" onSubmit={handleRegister}>
+          <div className="space-y-6">
+            <div className="space-y-2">
+              <label htmlFor="name" className="block text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Full Identity Name</label>
               <input
                 id="name"
                 name="name"
                 type="text"
                 required
-                className="block w-full rounded-lg border-0 py-2.5 px-3 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-red-600 sm:text-sm bg-slate-50 transition-shadow"
-                placeholder="Ingresa tu nombre"
+                className="block w-full rounded-xl border border-slate-800 bg-black py-4 px-4 text-white focus:border-white outline-none text-xs transition-all"
+                placeholder="CARLOS BENITEZ"
                 disabled={isLoading || isPending}
               />
             </div>
-            <div>
-              <label htmlFor="email-address" className="block text-sm font-medium text-slate-700 mb-1">Email Institucional</label>
+            <div className="space-y-2">
+              <label htmlFor="email-address" className="block text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Academic Email</label>
               <input
                 id="email-address"
                 name="email"
                 type="email"
-                autoComplete="email"
                 required
-                className="block w-full rounded-lg border-0 py-2.5 px-3 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-red-600 sm:text-sm bg-slate-50 transition-shadow"
-                placeholder="ejemplo@fiuna.edu.py"
-                disabled={isLoading || isPending}
-              />
-            </div>
-            <div>
-              <label htmlFor="password" className="block text-sm font-medium text-slate-700 mb-1">Contraseña</label>
-              <input
-                id="password"
-                name="password"
-                type="password"
-                required
-                className="block w-full rounded-lg border-0 py-2.5 px-3 text-slate-900 ring-1 ring-inset ring-slate-300 placeholder:text-slate-400 focus:ring-2 focus:ring-inset focus:ring-red-600 sm:text-sm bg-slate-50 transition-shadow"
-                placeholder="Crea una contraseña segura"
+                className="block w-full rounded-xl border border-slate-800 bg-black py-4 px-4 text-white focus:border-white outline-none text-xs transition-all"
+                placeholder="USER@FIUNA.EDU.PY"
                 disabled={isLoading || isPending}
               />
             </div>
           </div>
 
-          <div>
+          <div className="bg-black/60 p-6 border border-slate-800">
+             <p className="text-[9px] text-slate-600 font-light italic leading-loose uppercase tracking-tighter">
+               Nota: Todas las solicitudes de registro deben ser validadas por el administrador del sistema antes de autorizar el acceso a la telemetría.
+             </p>
+          </div>
+
+          <div className="pt-4">
             <button
               type="submit"
               disabled={isLoading || isPending}
-              className="group relative flex w-full justify-center items-center gap-2 rounded-lg bg-red-600 px-3 py-3 text-sm font-semibold text-white hover:bg-red-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-red-600 shadow-sm disabled:opacity-70 disabled:cursor-not-allowed transition-all"
+              className="group relative flex w-full justify-center items-center gap-4 rounded-xl bg-white px-6 py-5 text-[10px] font-black uppercase tracking-[0.5em] text-black hover:bg-slate-200 focus-visible:outline-none shadow-2xl disabled:opacity-30 transition-all active:scale-95"
             >
               {(isLoading || isPending) ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Procesando solicitud...
+                  <Loader2 className="h-5 w-5 animate-spin" />
+                  Procesando Nodo...
                 </>
               ) : (
-                "Registrarse"
+                <>
+                  <UserPlus className="h-5 w-5" />
+                  Enviar Solicitud
+                </>
               )}
             </button>
           </div>
-          <div className="text-center text-sm text-slate-500 pt-3 border-t border-slate-100">
-            ¿Ya tienes una cuenta?{' '}
-            <Link href="/login" className="font-semibold text-red-600 hover:text-red-700 transition-colors">
-              Inicia Sesión
-            </Link>
+
+          <div className="text-center pt-8 border-t border-slate-800">
+             <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Ya registrado //</span>
+             <Link href="/login" className="ml-3 text-[9px] font-black text-white hover:underline uppercase tracking-widest">
+               Volver al Login
+             </Link>
           </div>
         </form>
       </div>

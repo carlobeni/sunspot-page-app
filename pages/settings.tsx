@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Settings as SettingsIcon, Users, Network, Save, Server, Loader2, KeyRound, Pencil, Trash2, X } from "lucide-react";
+import { Settings as SettingsIcon, Users, Network, Save, Server, Loader2, KeyRound, Pencil, Trash2, X, Shield, Cpu, Activity } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -33,8 +33,7 @@ export default function SettingsPage() {
   const [formData, setFormData] = useState({ name: "", email: "", role: "Visualizador", password: "" });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // The logged-in user simulation
-  const activeUserRole = "Administrador"; // Given by requirements
+  const activeUserRole = "Administrador"; 
 
   const handleSave = () => {
     setIsSaving(true);
@@ -94,103 +93,97 @@ export default function SettingsPage() {
           }
           return u;
         }));
-      } else if (modalType === "pass") {
-        // Mock password update
-        console.log(`Password for user ${selectedUserId} updated to ${formData.password}`);
       }
-      
       setIsSubmitting(false);
       setModalType(null);
     }, 800);
   };
 
   return (
-    <div className="p-5 pt-24 lg:p-10 max-w-7xl mx-auto">
-      {/* Modals Overlay */}
+    <div className="p-5 pt-24 lg:p-12 max-w-screen-2xl mx-auto min-h-screen bg-[#020617] text-slate-200">
+      {/* Modals Overlay Noir */}
       {modalType && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/50 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-white rounded-2xl shadow-xl w-full max-w-md border border-slate-200 overflow-hidden">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-100 bg-slate-50/50">
-              <h3 className="text-lg font-serif font-bold text-slate-900">
-                {modalType === "add" && "Registrar Nueva Cuenta"}
-                {modalType === "edit" && "Editar Usuario"}
-                {modalType === "pass" && "Modificar Contraseña"}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
+          <div className="bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md border border-slate-800 overflow-hidden">
+            <div className="flex items-center justify-between px-8 py-6 border-b border-slate-800 bg-black">
+              <h3 className="text-xs font-black text-white uppercase tracking-[0.4em]">
+                {modalType === "add" && "NUEVO REGISTRO / ACCESS"}
+                {modalType === "edit" && "EDITAR PERFIL / CONFIG"}
+                {modalType === "pass" && "SINC SECURITY / CRYPTO"}
               </h3>
               <button 
                 onClick={() => setModalType(null)} 
-                className="p-1 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-colors"
+                className="p-2 text-slate-500 hover:text-white transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
             
-            <form onSubmit={handleModalSubmit} className="p-6 space-y-5">
+            <form onSubmit={handleModalSubmit} className="p-8 space-y-6">
               {(modalType === "add" || modalType === "edit") && (
                 <>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Nombre Completo</label>
+                  <div className="space-y-2">
+                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Label Name</label>
                     <input 
                       required 
                       type="text" 
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      className="block w-full rounded-lg border border-slate-300 py-2.5 px-3 text-slate-900 focus:ring-2 focus:ring-red-600 outline-none sm:text-sm" 
+                      className="block w-full rounded-xl border border-slate-800 bg-black py-4 px-4 text-white focus:border-white outline-none text-xs uppercase tracking-tighter" 
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Correo Electrónico</label>
+                  <div className="space-y-2">
+                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Network ID / Email</label>
                     <input 
                       required 
                       type="email" 
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="block w-full rounded-lg border border-slate-300 py-2.5 px-3 text-slate-900 focus:ring-2 focus:ring-red-600 outline-none sm:text-sm" 
+                      className="block w-full rounded-xl border border-slate-800 bg-black py-4 px-4 text-white focus:border-white outline-none text-xs" 
                     />
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-slate-700 mb-1">Rol de Usuario</label>
+                  <div className="space-y-2">
+                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Access Protocol</label>
                     <select 
                       value={formData.role}
                       onChange={(e) => setFormData({...formData, role: e.target.value})}
-                      className="block w-full rounded-lg border border-slate-300 py-2.5 px-3 text-slate-900 focus:ring-2 focus:ring-red-600 outline-none sm:text-sm"
+                      className="block w-full rounded-xl border border-slate-800 bg-black py-4 px-4 text-white focus:border-white outline-none text-xs uppercase tracking-widest"
                     >
-                      <option value="Visualizador">Visualizador (Lectura)</option>
-                      <option value="Administrador">Administrador (Total)</option>
+                      <option value="Visualizador">Visualizador (Standard)</option>
+                      <option value="Administrador">Administrador (Root)</option>
                     </select>
                   </div>
                 </>
               )}
 
               {(modalType === "add" || modalType === "pass") && (
-                <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-1">
-                    {modalType === "add" ? "Contraseña Inicial" : "Nueva Contraseña"}
-                  </label>
+                <div className="space-y-2">
+                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Password Key</label>
                   <input 
                     required 
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    className="block w-full rounded-lg border border-slate-300 py-2.5 px-3 text-slate-900 focus:ring-2 focus:ring-red-600 outline-none sm:text-sm" 
+                    className="block w-full rounded-xl border border-slate-800 bg-black py-4 px-4 text-white focus:border-white outline-none text-xs" 
                   />
                 </div>
               )}
 
-              <div className="pt-4 flex gap-3 justify-end border-t border-slate-100 mt-2">
+              <div className="pt-6 flex gap-4 justify-end border-t border-slate-800 mt-4">
                 <button 
                   type="button" 
                   onClick={() => setModalType(null)}
-                  className="px-4 py-2 text-sm font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-50 transition-colors rounded-lg border border-slate-200"
+                  className="px-6 py-3 text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition-all"
                 >
-                  Cancelar
+                  Cancel
                 </button>
                 <button 
                   type="submit" 
                   disabled={isSubmitting}
-                  className="flex items-center justify-center gap-2 px-4 py-2 text-sm font-medium text-white bg-red-600 hover:bg-red-700 transition-colors rounded-lg disabled:opacity-70 min-w-[140px]"
+                  className="flex items-center justify-center gap-3 px-8 py-3 text-[10px] font-black text-black bg-white hover:bg-slate-200 transition-all rounded-xl disabled:opacity-50 uppercase tracking-[0.2em]"
                 >
-                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
-                  {isSubmitting ? "Guardando..." : "Confirmar"}
+                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
+                  {isSubmitting ? "Sincronizando..." : "Cometer"}
                 </button>
               </div>
             </form>
@@ -198,29 +191,33 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Header */}
-      <div className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6 border-b border-slate-200 pb-6">
+      {/* Header Noir */}
+      <div className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-10 border-b border-slate-800 pb-12">
         <div>
-          <h1 className="text-4xl font-serif font-bold text-slate-900 tracking-tight">Ajustes del Sistema</h1>
-          <p className="text-slate-500 mt-2 text-sm md:text-base font-light italic">
-            Configuración de conectividad y gestión de accesos.
+          <h1 className="text-4xl font-serif font-black text-white tracking-widest uppercase flex items-center gap-8">
+            <SettingsIcon className="h-12 w-12 text-slate-600" />
+            Control
+          </h1>
+          <p className="text-slate-500 mt-6 text-xl font-light italic border-l-2 border-slate-800 pl-8 tracking-tight">
+            Gestión de arquitecturas de red y <span className="text-white font-black underline underline-offset-8">permisos binarios</span>.
           </p>
         </div>
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="flex items-center justify-center gap-2 px-6 py-3 rounded-lg bg-red-600 text-white font-medium hover:bg-red-700 transition shadow-sm w-full md:w-auto"
+          className="flex items-center justify-center gap-4 px-10 py-5 rounded-xl bg-white text-black font-black uppercase text-[10px] tracking-[0.3em] hover:bg-slate-200 transition-all shadow-[0_0_50px_rgba(255,255,255,0.05)] w-full md:w-auto active:scale-95"
         >
           {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-          {isSaving ? "Guardando..." : "Guardar Cambios"}
+          {isSaving ? "SYNCING..." : "COMMIT GLOBAL CHANGES"}
         </button>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-8">
-        <div className="lg:w-64 flex-shrink-0 space-y-1 bg-white p-2 rounded-2xl border border-slate-200 h-fit shadow-sm">
+      <div className="flex flex-col lg:flex-row gap-12">
+        {/* Navigation Sidebar Noir */}
+        <div className="lg:w-80 flex-shrink-0 space-y-px bg-slate-900 border border-slate-800 rounded-2xl h-fit shadow-2xl overflow-hidden p-1">
           {[
-            { id: "general", name: "Conectividad", icon: Network },
-            { id: "accounts", name: "Gestión de Cuentas", icon: Users },
+            { id: "general", name: "Network Layer", icon: Network },
+            { id: "accounts", name: "Security Protocols", icon: Users },
           ].map((tab) => {
             const Icon = tab.icon;
             return (
@@ -228,40 +225,44 @@ export default function SettingsPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium transition-colors",
+                  "w-full flex items-center gap-4 px-8 py-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
                   activeTab === tab.id
-                    ? "bg-red-50 text-red-700"
-                    : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
+                    ? "bg-slate-800 text-white border-l-4 border-white"
+                    : "text-slate-500 hover:bg-slate-800/40 hover:text-slate-200 border-l-4 border-transparent"
                 )}
               >
-                <Icon className={cn("h-5 w-5", activeTab === tab.id ? "text-red-600" : "text-slate-400")} />
+                <Icon className={cn("h-4 w-4", activeTab === tab.id ? "text-white" : "text-slate-600")} />
                 {tab.name}
               </button>
             );
           })}
         </div>
 
+        {/* Content Area Noir */}
         <div className="flex-1 min-w-0">
-          <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
-            {/* Conectividad */}
+          <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-[0_0_100px_rgba(0,0,0,0.5)] overflow-hidden">
+            
+            {/* Network Section Noir */}
             {activeTab === "general" && (
-               <div className="p-8 space-y-8 animate-in fade-in duration-300">
-                <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-                  <Network className="h-6 w-6 text-red-600" />
-                  <h2 className="text-xl font-serif font-bold text-slate-900">Configuración de Conectividad</h2>
+               <div className="p-10 lg:p-16 space-y-12 animate-in fade-in duration-700">
+                <div className="flex items-center gap-4 pb-8 border-b border-slate-800">
+                  <Cpu className="h-8 w-8 text-white opacity-40" />
+                  <h2 className="text-2xl font-serif font-black text-white uppercase tracking-[0.3em]">Conectividad</h2>
                 </div>
                 
-                <div className="space-y-8">
-                  <p className="text-sm font-light text-slate-500 italic mb-4">
-                    Se empleant dos interfaces: un Hotspot interno para conexión LAN directa, y una antena externa para conectarse a una red WLAN. Ambos pueden operar simultáneamente.
+                <div className="space-y-12">
+                  <p className="text-xs font-light text-slate-500 italic max-w-3xl leading-relaxed uppercase tracking-tighter">
+                    Administración de interfaces duales: Internal Hotspot (LAN) y External Uplink (WLAN). Sincronización continua de hardware Raspberry Pi 5.
                   </p>
 
-                  {/* Hotspot LAN */}
-                  <div className="bg-slate-50 border border-slate-200 rounded-2xl p-6">
-                    <div className="flex items-start justify-between mb-4">
+                  <div className="bg-black border border-slate-800 rounded-xl p-10 relative group">
+                    <div className="absolute top-0 right-0 p-8 opacity-[0.02]">
+                        <Network className="h-32 w-32" />
+                    </div>
+                    <div className="flex items-start justify-between mb-8">
                       <div>
-                        <h3 className="text-base font-bold text-slate-900">Punto de Acceso LAN (Internal Hotspot)</h3>
-                        <p className="text-sm text-slate-500 mt-1">Crea una red local para administrar el dispositivo directamente desde tu celular o PC.</p>
+                        <h3 className="text-xs font-black text-white uppercase tracking-widest">Internal Hotspot [LAN_01]</h3>
+                        <p className="text-[10px] text-slate-500 mt-2 uppercase tracking-tight italic font-medium">Puerta de enlace administrativa para control remoto directo.</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input 
@@ -270,28 +271,27 @@ export default function SettingsPage() {
                           defaultChecked 
                           disabled={activeUserRole !== "Administrador"}
                         />
-                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500 disabled:opacity-50"></div>
+                        <div className="w-12 h-6 bg-slate-800 rounded-xl peer peer-checked:after:bg-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-slate-600 after:rounded-xl after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-6 border border-slate-700 peer-checked:bg-white/10 peer-checked:border-white"></div>
                       </label>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4 border-t border-slate-200">
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">Nombre (SSID)</label>
-                        <input type="text" defaultValue="Sunspot_LAN_01" disabled={activeUserRole !== "Administrador"} className="block w-full rounded-lg border-slate-300 py-2 px-3 text-slate-900 focus:ring-red-600 sm:text-sm bg-white" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-slate-800">
+                      <div className="space-y-2">
+                        <label className="block text-[9px] font-black text-slate-600 uppercase tracking-widest">SSID IDENTIFIER</label>
+                        <input type="text" defaultValue="Sunspot_LAN_01" disabled={activeUserRole !== "Administrador"} className="block w-full bg-slate-900 border border-slate-800 rounded-xl py-4 px-4 text-xs text-white font-mono uppercase focus:border-white outline-none" />
                       </div>
-                      <div>
-                        <label className="block text-xs font-semibold text-slate-700 mb-1">Contraseña</label>
-                        <input type="password" defaultValue="admin123" disabled={activeUserRole !== "Administrador"} className="block w-full rounded-lg border-slate-300 py-2 px-3 text-slate-900 focus:ring-red-600 sm:text-sm bg-white" />
+                      <div className="space-y-2">
+                        <label className="block text-[9px] font-black text-slate-600 uppercase tracking-widest">ENCRYPTION KEY</label>
+                        <input type="password" defaultValue="admin123" disabled={activeUserRole !== "Administrador"} className="block w-full bg-slate-900 border border-slate-800 rounded-xl py-4 px-4 text-xs text-white outline-none focus:border-white" />
                       </div>
                     </div>
                   </div>
 
-                  {/* Red WLAN Externa */}
-                  <div className="bg-white border border-slate-200 rounded-2xl p-6 shadow-sm">
-                    <div className="flex items-start justify-between mb-6">
+                  <div className="bg-black border border-slate-800 rounded-xl p-10 shadow-2xl">
+                    <div className="flex items-start justify-between mb-10">
                       <div>
-                        <h3 className="text-base font-bold text-slate-900">Conexión a Red WLAN (Antena Externa)</h3>
-                        <p className="text-sm text-slate-500 mt-1">Conecta el dispositivo a internet oa una red institucional para enviar datos.</p>
+                        <h3 className="text-xs font-black text-white uppercase tracking-widest">External WLAN Uplink</h3>
+                        <p className="text-[10px] text-slate-500 mt-2 uppercase tracking-tight italic font-medium">Sincronización con infraestructuras de red institucionales.</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input 
@@ -300,42 +300,42 @@ export default function SettingsPage() {
                           defaultChecked 
                           disabled={activeUserRole !== "Administrador"}
                         />
-                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-red-200 rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-green-500 disabled:opacity-50"></div>
+                        <div className="w-12 h-6 bg-slate-800 rounded-xl peer peer-checked:after:bg-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-slate-600 after:rounded-xl after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-6 border border-slate-700 peer-checked:bg-white/10 peer-checked:border-white"></div>
                       </label>
                     </div>
 
                     <div>
-                      <h4 className="text-sm font-semibold text-slate-900 mb-3 flex items-center gap-2">
-                        Redes Disponibles detectadas
-                        <Loader2 className="h-3 w-3 animate-spin text-slate-400" />
+                      <h4 className="text-[9px] font-black text-slate-500 mb-6 flex items-center gap-3 uppercase tracking-widest">
+                        RF Signal Scan
+                        <Loader2 className="h-3 w-3 animate-spin text-white" />
                       </h4>
-                      <div className="border border-slate-200 rounded-xl divide-y divide-slate-100 overflow-hidden">
+                      <div className="border border-slate-800 rounded-xl divide-y divide-slate-800 overflow-hidden">
                         {[
-                          { ssid: "FIUNA_Lab", signal: "Excelente", security: "WPA2", connected: true },
-                          { ssid: "FIUNA_Alumnos", signal: "Buena", security: "Abierta", connected: false },
-                          { ssid: "Sunspot_Research", signal: "Media", security: "WPA2/WPA3", connected: false },
+                          { ssid: "FIUNA_Lab", signal: "Excelent", security: "WPA2", connected: true },
+                          { ssid: "FIUNA_Alumnos", signal: "Strong", security: "Open", connected: false },
+                          { ssid: "Sunspot_Research", signal: "Moderate", security: "WPA3", connected: false },
                         ].map((net, i) => (
-                          <div key={i} className={cn("p-4 flex items-center justify-between transition-colors", net.connected ? "bg-red-50" : "hover:bg-slate-50")}>
+                          <div key={i} className={cn("p-6 flex items-center justify-between transition-all", net.connected ? "bg-white/5" : "hover:bg-slate-800/40")}>
                             <div className="flex flex-col">
-                              <span className={cn("text-sm font-bold", net.connected ? "text-red-700" : "text-slate-900")}>
+                              <span className={cn("text-xs font-black uppercase tracking-widest", net.connected ? "text-white" : "text-slate-500")}>
                                 {net.ssid}
                               </span>
-                              <span className="text-xs text-slate-500 flex gap-2">
-                                <span>Señal: {net.signal}</span>
-                                <span>•</span>
+                              <span className="text-[9px] text-slate-600 mt-1 flex gap-3 uppercase font-black tracking-tighter">
+                                <span>Signal: {net.signal}</span>
+                                <span className="opacity-30">//</span>
                                 <span>{net.security}</span>
                               </span>
                             </div>
                             {net.connected ? (
-                              <span className="text-xs font-bold text-green-600 bg-green-100 px-2 py-1 rounded border border-green-200">
-                                Conectado
+                              <span className="text-[9px] font-black text-white bg-slate-800 px-4 py-2 border border-white/20 uppercase tracking-widest shadow-[0_0_20px_rgba(255,255,255,0.05)]">
+                                Active Link
                               </span>
                             ) : (
                               <button 
                                 disabled={activeUserRole !== "Administrador"}
-                                className="text-xs font-medium text-slate-600 bg-white border border-slate-200 px-3 py-1.5 rounded-lg hover:bg-slate-50 hover:text-red-600 transition-colors disabled:opacity-50"
+                                className="text-[9px] font-black text-slate-600 bg-black border border-slate-800 px-6 py-2 hover:bg-white hover:text-black transition-all uppercase tracking-widest disabled:opacity-20"
                               >
-                                Conectar
+                                Connect
                               </button>
                             )}
                           </div>
@@ -347,75 +347,72 @@ export default function SettingsPage() {
                </div>
             )}
 
-            {/* Accesos */}
+            {/* Access Section Noir */}
             {activeTab === "accounts" && (
-              <div className="p-0 animate-in fade-in duration-300">
-                <div className="p-8 pb-4">
-                  <div className="flex items-center gap-3 pb-4 border-b border-slate-100">
-                    <Users className="h-6 w-6 text-red-600" />
-                    <h2 className="text-xl font-serif font-bold text-slate-900">Cuentas y Permisos</h2>
+              <div className="p-0 animate-in fade-in duration-700">
+                <div className="p-10 lg:p-16 pb-8">
+                  <div className="flex items-center gap-4 pb-8 border-b border-slate-800">
+                    <Users className="h-8 w-8 text-white opacity-40" />
+                    <h2 className="text-2xl font-serif font-black text-white uppercase tracking-[0.3em]">Permisos</h2>
                   </div>
-                  <p className="text-sm font-light text-slate-500 mt-2 italic">Solo los administradores pueden modificar los permisos.</p>
+                  <p className="text-[10px] font-black text-slate-600 mt-6 uppercase tracking-widest italic">Root access required for credential modification.</p>
                 </div>
                 
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-slate-200">
-                    <thead className="bg-slate-50">
+                  <table className="min-w-full divide-y divide-slate-800">
+                    <thead className="bg-black">
                       <tr>
-                        <th scope="col" className="px-8 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Usuario</th>
-                        <th scope="col" className="px-8 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Rol</th>
-                        <th scope="col" className="px-8 py-4 text-left text-xs font-semibold uppercase tracking-wider text-slate-500">Última Sesión</th>
-                        <th scope="col" className="px-8 py-4 text-right text-xs font-semibold uppercase tracking-wider text-slate-500">Acciones</th>
+                        <th scope="col" className="px-10 py-6 text-left text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Identity Identifier</th>
+                        <th scope="col" className="px-10 py-6 text-left text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Access Rank</th>
+                        <th scope="col" className="px-10 py-6 text-left text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Last Sync</th>
+                        <th scope="col" className="px-10 py-6 text-right text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Action Keys</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-100 bg-white">
+                    <tbody className="divide-y divide-slate-800 bg-slate-900">
                       {users.map((user) => (
-                        <tr key={user.id} className="hover:bg-slate-50/50 transition-colors">
-                          <td className="whitespace-nowrap px-8 py-5">
+                        <tr key={user.id} className="hover:bg-black/40 transition-all">
+                          <td className="whitespace-nowrap px-10 py-8">
                             <div className="flex items-center">
-                              <div className="h-10 w-10 flex-shrink-0 rounded-full bg-red-100 border border-red-200 flex items-center justify-center">
-                                <span className="text-sm font-bold text-red-700 font-serif">{user.name.charAt(0)}</span>
+                              <div className="h-12 w-12 flex-shrink-0 rounded-xl bg-black border border-slate-800 flex items-center justify-center">
+                                <span className="text-xs font-black text-white font-serif tracking-widest">{user.name.charAt(0)}</span>
                               </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-semibold text-slate-900">{user.name}</div>
-                                <div className="text-sm text-slate-500">{user.email}</div>
+                              <div className="ml-6">
+                                <div className="text-xs font-black text-white uppercase tracking-widest">{user.name}</div>
+                                <div className="text-[10px] text-slate-500 mt-1">{user.email}</div>
                               </div>
                             </div>
                           </td>
-                          <td className="whitespace-nowrap px-8 py-5">
+                          <td className="whitespace-nowrap px-10 py-8">
                             <span className={cn(
-                              "inline-flex items-center rounded-md px-2.5 py-1 text-xs font-medium border",
+                              "inline-flex items-center rounded-xl px-4 py-2 text-[9px] font-black uppercase tracking-widest border",
                               user.role === "Administrador" 
-                                ? "bg-red-50 text-red-700 border-red-200" 
-                                : "bg-slate-100 text-slate-700 border-slate-200"
+                                ? "bg-white text-black border-white" 
+                                : "bg-black text-slate-500 border-slate-800"
                             )}>
                               {user.role}
                             </span>
                           </td>
-                          <td className="whitespace-nowrap px-8 py-5 text-sm text-slate-500">
+                          <td className="whitespace-nowrap px-10 py-8 text-[10px] font-mono text-slate-500 uppercase tracking-tighter">
                             {user.lastLogin}
                           </td>
-                          <td className="whitespace-nowrap px-8 py-5 text-right text-sm font-medium">
+                          <td className="whitespace-nowrap px-10 py-8 text-right font-medium">
                             {activeUserRole === "Administrador" && (
-                              <div className="flex justify-end gap-3">
+                              <div className="flex justify-end gap-2">
                                 <button 
                                   onClick={() => openEditUserModal(user)}
-                                  className="text-indigo-600 hover:text-indigo-900 flex items-center gap-1 bg-indigo-50 px-2 py-1 rounded transition-colors"
-                                  title="Editar Usuario"
+                                  className="text-slate-100 hover:bg-white hover:text-black p-3 border border-slate-800 transition-all rounded-xl"
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </button>
                                 <button 
                                   onClick={() => openPasswordModal(user.id)}
-                                  className="text-amber-600 hover:text-amber-900 flex items-center gap-1 bg-amber-50 px-2 py-1 rounded transition-colors"
-                                  title="Modificar Contraseña"
+                                  className="text-slate-100 hover:bg-white hover:text-black p-3 border border-slate-800 transition-all rounded-xl"
                                 >
                                   <KeyRound className="h-4 w-4" />
                                 </button>
                                 <button 
                                   onClick={() => deleteUser(user.id)}
-                                  className="text-red-600 hover:text-red-900 flex items-center gap-1 bg-red-50 px-2 py-1 rounded transition-colors"
-                                  title="Eliminar Cuenta"
+                                  className="text-slate-500 hover:bg-white hover:text-black p-3 border border-slate-800 transition-all rounded-xl"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </button>
@@ -428,12 +425,12 @@ export default function SettingsPage() {
                   </table>
                   
                   {activeUserRole === "Administrador" && (
-                    <div className="p-6 border-t border-slate-100 flex justify-end">
+                    <div className="p-10 border-t border-slate-800 flex justify-end">
                       <button 
                         onClick={openAddUserModal}
-                        className="text-sm font-medium text-red-600 hover:text-red-700 hover:bg-red-50 px-4 py-2 rounded-lg transition-colors"
+                        className="text-[10px] font-black text-slate-400 hover:text-white uppercase tracking-[0.4em] transition-all flex items-center gap-3 border border-dashed border-slate-800 px-8 py-4 hover:border-white"
                       >
-                        + Registrar nueva cuenta manual
+                        + ADD NEW CREDENTIAL
                       </button>
                     </div>
                   )}

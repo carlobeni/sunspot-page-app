@@ -1,167 +1,264 @@
 "use client";
 
-import { useMemo } from "react";
-import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
-import { Activity, Info } from "lucide-react";
+import { useState, useEffect, useCallback, useMemo } from "react";
+import {
+  Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+  ScatterChart, Scatter, ZAxis, Line, Brush, Legend, ComposedChart, ReferenceLine,
+} from "recharts";
+import { Info, TrendingUp, Zap, Clock, Map as MapIcon, ChevronDown } from "lucide-react";
 
-// Mock data: Historical sunspot numbers and predictive curve
-const data = [
-  { year: 2014, actual: 110, predicted: 115 },
-  { year: 2015, actual: 95, predicted: 90 },
-  { year: 2016, actual: 70, predicted: 65 },
-  { year: 2017, actual: 40, predicted: 45 },
-  { year: 2018, actual: 20, predicted: 22 },
-  { year: 2019, actual: 10, predicted: 12 },
-  { year: 2020, actual: 15, predicted: 18 },
-  { year: 2021, actual: 35, predicted: 40 },
-  { year: 2022, actual: 70, predicted: 75 },
-  { year: 2023, actual: 120, predicted: 110 },
-  { year: 2024, actual: null, predicted: 140 }, // Future prediction starts
-  { year: 2025, actual: null, predicted: 155 },
-  { year: 2026, actual: null, predicted: 145 },
-  { year: 2027, actual: null, predicted: 120 },
-];
+// Shared tick formatter yearFloat → "YYYY-MM"
+const yf2m = (v: number) => {
+  const yr = Math.floor(v);
+  const mo = Math.round((v - yr) * 12) + 1;
+  return `${yr}-${String(Math.min(mo, 12)).padStart(2, "0")}`;
+};
 
+// ─── Chart skeleton ───────────────────────────────────────────────────────────
+function ChartSkeleton({ height = 450, text = "Calculando…" }: { height?: number, text?: string }) {
+  return (
+    <div
+      style={{ height }}
+      className="w-full rounded-xl bg-slate-800/40 animate-pulse flex items-center justify-center"
+    >
+      <div className="flex flex-col items-center gap-4 opacity-50">
+        <div className="w-10 h-10 border-4 border-slate-500 border-t-white rounded-xl animate-spin" />
+        <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black">{text}</span>
+      </div>
+    </div>
+  );
+}
+
+// ─── Main component ───────────────────────────────────────────────────────────
 export default function TrendsPage() {
-  const currentPrediction = useMemo(() => {
-    return data.find(d => d.year === 2024)?.predicted || 0;
+  const [baseLoading, setBaseLoading]       = useState(true);
+  const [forecastLoading, setForecastLoading] = useState(false);
+  
+  // Separated rendering flags for non-blocking mounting
+  const [renderSsn, setRenderSsn] = useState(false);
+  const [renderButterfly, setRenderButterfly] = useState(false);
+
+  // RAM cache
+  const [clientCache, setClientCache] = useState<Record<number, any>>({});
+
+  const [forecastHorizon, setForecastHorizon] = useState(60);
+  const [forecast, setForecast] = useState<any>(null);
+  const [monthIdx,  setMonthIdx]  = useState(0);
+  const [mounted, setMounted] = useState(false);
+
+  // ── Parallel delayed application to unblock main thread ─────────────
+  const applyData = useCallback((data: any, fromCache: boolean = false) => {
+    if (!fromCache) {
+      setForecastLoading(true);
+      setRenderSsn(false);
+      setRenderButterfly(false);
+    }
+    
+    // Defer processing to visual pipeline
+    setTimeout(() => {
+      setForecast(data);
+      if (data.forecastStartIndex > 0) setMonthIdx(data.forecastStartIndex);
+      
+      if (!fromCache) {
+        setForecastLoading(false);
+        setBaseLoading(false);
+        // Render components incrementally
+        setTimeout(() => setRenderSsn(true), 10);
+        setTimeout(() => setRenderButterfly(true), 50);
+      }
+    }, 0);
   }, []);
 
+  // ── Fetch forecast with RAM Cache ─────────────
+  const fetchForecast = useCallback(async (horizon: number) => {
+    if (clientCache[horizon]) {
+      applyData(clientCache[horizon], true);
+      return;
+    }
+
+    setForecastLoading(true);
+    setRenderSsn(false);
+    setRenderButterfly(false);
+
+    try {
+      const res = await fetch(`/api/forecast?horizon=${horizon}`);
+      if (!res.ok) throw new Error("Forecast fetch failed");
+      const json = await res.json();
+      setClientCache(prev => ({ ...prev, [horizon]: json }));
+      applyData(json, false);
+    } catch (e) {
+      console.error(e);
+      setForecastLoading(false);
+      setBaseLoading(false);
+    }
+  }, [clientCache, applyData]);
+
+  useEffect(() => {
+    setMounted(true);
+    fetchForecast(forecastHorizon);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Re-fetch when horizon changes (debounced via button or select)
+  const handleHorizonChange = useCallback((h: number) => {
+    setForecastHorizon(h);
+    fetchForecast(h);
+  }, [fetchForecast]);
+
+  // ── Derived data — all O(1) lookups, zero heavy computation ────────────────
+  const predictions       = forecast?.predictions       ?? [];
+  const butterflyHistorical = forecast?.butterflyHistorical ?? [];
+  const butterflyForecast   = forecast?.butterflyForecast   ?? [];
+  const densityCache      = forecast?.densityCache       ?? {};
+  const xDomain           = forecast?.xDomain            ?? [0, 1];
+
+  const currentMonthData  = predictions[monthIdx] ?? {};
+  const currentDiskDensity = densityCache[monthIdx] ?? [];
+  const forecastOptions   = useMemo(() => predictions.filter((p: any) => p.isForecast), [predictions]);
+
+  if (baseLoading) return (
+    <div className="flex items-center justify-center min-h-screen bg-[#020617]">
+      <div className="flex flex-col items-center gap-6">
+        <div className="w-16 h-16 border-4 border-slate-700 border-t-white rounded-xl animate-spin" />
+        <span className="text-white font-serif font-black italic tracking-widest animate-pulse uppercase">
+          Sincronizando Ciclo…
+        </span>
+      </div>
+    </div>
+  );
+
   return (
-    <div className="p-5 pt-24 lg:p-10 max-w-7xl mx-auto">
-      <div className="mb-10 border-b border-slate-200 pb-6 flex flex-col md:flex-row md:items-end justify-between gap-6">
+    <div className="p-5 pt-24 lg:p-12 max-w-screen-2xl mx-auto min-h-screen bg-[#020617] text-slate-200">
+
+      {/* Header */}
+      <div className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-slate-800 pb-12">
         <div>
-          <h1 className="text-4xl font-serif font-bold text-slate-900 tracking-tight">Curvas de Tendencia</h1>
-          <p className="text-slate-500 mt-2 text-sm md:text-base font-light italic">
-            Predicción del ciclo solar mediante modelos Deep Learning.
+          <div className="flex items-center gap-2 mb-4">
+            <span className="px-4 py-1 bg-slate-900 text-slate-400 rounded-lg text-[9px] font-black uppercase tracking-[0.3em] border border-slate-800">
+              Hathaway Model v1.0
+            </span>
+          </div>
+          <h1 className="text-4xl font-serif font-black text-white tracking-widest uppercase">Pronóstico</h1>
+          <p className="text-slate-500 mt-4 text-xl font-light tracking-tight max-w-2xl leading-relaxed italic border-l-2 border-slate-800 pl-6">
+            Ley de Spörer proyectada sobre el{" "}
+            <span className="text-white font-black underline decoration-slate-700 underline-offset-8">Ciclo Solar 25</span>.
           </p>
-        </div>
-        <div className="bg-red-50 text-red-700 px-4 py-3 rounded-lg border border-red-100 flex items-center gap-3 shadow-sm min-w-max">
-            <Activity className="h-5 w-5" />
-            <div className="flex flex-col">
-              <span className="text-xs font-semibold uppercase tracking-wider">Pico Estimado (2025)</span>
-              <span className="text-xl font-bold font-serif leading-none">~155 SSN</span>
-            </div>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-        <div className="lg:col-span-3">
-          <div className="bg-white p-8 rounded-2xl border border-slate-200 shadow-sm">
-            <h2 className="text-lg font-serif font-bold text-slate-900 mb-6 flex items-center gap-2">
-              <Activity className="h-5 w-5 text-red-600" />
-              Evolución y Predicción SSN
-            </h2>
-            <div className="h-[450px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart
-                  data={data}
-                  margin={{ top: 10, right: 30, left: 0, bottom: 0 }}
+      {/* Simplified Prediction Horizon Control */}
+      <div className="mb-12 flex items-center justify-between border-b border-slate-800/50 pb-6">
+        <h2 className="text-xl font-serif font-black text-white italic tracking-widest opacity-80 hidden sm:block">
+           Proyección
+        </h2>
+        
+        <div className="flex items-center gap-4">
+          <div className="relative group">
+            <div className="flex items-center gap-3 bg-slate-900 border border-slate-700 hover:border-[#10b981] transition-all rounded-full px-5 py-2 shadow-lg relative">
+              <Clock className="w-4 h-4 text-[#10b981] pointer-events-none" />
+              <div className="flex flex-col relative">
+                <span className="text-[8px] uppercase tracking-[0.2em] text-slate-500 font-bold leading-none mb-0.5 pointer-events-none">
+                  Ventana de Predicción
+                </span>
+                <select
+                  value={forecastHorizon}
+                  onChange={(e) => handleHorizonChange(parseInt(e.target.value))}
+                  className="bg-transparent text-white font-black text-[11px] sm:text-xs uppercase tracking-widest outline-none appearance-none cursor-pointer w-[120px] sm:w-[140px]"
                 >
-                  <defs>
-                    <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#334155" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#334155" stopOpacity={0}/>
-                    </linearGradient>
-                    <linearGradient id="colorPredicted" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#dc2626" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="#dc2626" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e2e8f0" vertical={false} />
-                  <XAxis 
-                    dataKey="year" 
-                    stroke="#64748b" 
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    padding={{ left: 20, right: 20 }}
-                  />
-                  <YAxis 
-                    stroke="#64748b" 
-                    fontSize={12}
-                    tickLine={false}
-                    axisLine={false}
-                    tickFormatter={(value) => `${value}`}
-                  />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: 'rgba(255, 255, 255, 0.95)', 
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '12px',
-                      boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)',
-                      fontFamily: 'inherit'
-                    }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="actual" 
-                    name="Registrado (SSN)"
-                    stroke="#334155" 
-                    fillOpacity={1} 
-                    fill="url(#colorActual)" 
-                    strokeWidth={2}
-                    activeDot={{ r: 6, strokeWidth: 0, fill: '#334155' }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="predicted" 
-                    name="Predicción"
-                    stroke="#dc2626" 
-                    strokeDasharray="5 5"
-                    fillOpacity={1} 
-                    fill="url(#colorPredicted)" 
-                    strokeWidth={2}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-            <div className="flex gap-6 mt-6 pt-6 border-t border-slate-100 justify-center">
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-slate-700" />
-                <span className="text-sm font-medium text-slate-600">Datos Históricos</span>
+                  <option value={12} className="bg-slate-900 text-slate-200">1 Año a futuro</option>
+                  <option value={24} className="bg-slate-900 text-slate-200">2 Años a futuro</option>
+                  <option value={60} className="bg-slate-900 text-slate-200">5 Años a futuro</option>
+                  <option value={120} className="bg-slate-900 text-slate-200">10 Años a futuro</option>
+                </select>
               </div>
-              <div className="flex items-center gap-2">
-                <div className="w-3 h-3 rounded-full bg-red-600 border border-red-700 border-dashed" />
-                <span className="text-sm font-medium text-slate-600">Proyección IA</span>
-              </div>
+              <ChevronDown className="w-4 h-4 text-slate-500 group-hover:text-[#10b981] transition-colors pointer-events-none absolute right-4" />
             </div>
           </div>
+          
+          <button
+            onClick={() => fetchForecast(forecastHorizon)}
+            disabled={forecastLoading}
+            className="flex items-center justify-center p-3.5 rounded-full bg-slate-800 hover:bg-slate-700 text-[#10b981] disabled:opacity-50 transition-colors shadow-lg"
+            title="Sincronizar Predicción"
+          >
+            <Zap className={`h-4 w-4 ${forecastLoading ? 'animate-pulse' : ''}`} />
+          </button>
         </div>
+      </div>
 
-        <div className="space-y-6">
-          <div className="bg-slate-900 rounded-2xl p-6 text-white shadow-xl">
-            <h3 className="text-sm font-medium text-slate-400 mb-1">Modelo Actual</h3>
-            <p className="text-lg font-serif font-bold tracking-wide">LSTM v2.4 (Multivariante)</p>
-            <div className="mt-6 pt-6 border-t border-slate-800 space-y-4">
-              <div>
-                <span className="block text-xs text-slate-400 mb-1">Ventana de Observación</span>
-                <span className="font-mono text-sm">24 Ciclos Solares (1755-2023)</span>
-              </div>
-              <div>
-                <span className="block text-xs text-slate-400 mb-1">Métrica de Error (RMSE)</span>
-                <span className="font-mono text-sm text-red-400">±14.2 SSN</span>
-              </div>
-              <div>
-                <span className="block text-xs text-slate-400 mb-1">Predicción 2024</span>
-                <span className="font-serif text-3xl font-bold text-red-500">{currentPrediction}</span>
-                <span className="text-sm text-slate-400 ml-2">Manchas</span>
-              </div>
-            </div>
+      {/* SSN Chart */}
+      <div className="bg-slate-900 p-10 lg:p-20 rounded-2xl border border-slate-800 shadow-[0_0_80px_rgba(0,0,0,0.5)] min-h-[560px]">
+        <h3 className="text-xs font-black text-white uppercase tracking-[0.5em] mb-2 flex justify-between items-center border-l-4 border-white pl-8">
+          SSN
+          <TrendingUp className="h-5 w-5 opacity-40" />
+        </h3>
+        <p className="text-[10px] text-slate-400 mb-10 pl-8 font-light italic tracking-widest uppercase">
+          Amplitud suavizada mediante Filtro de Kalman Adaptativo.
+        </p>
+        {forecastLoading || !renderSsn ? <ChartSkeleton height={450} text="Generando Serie SSN..." /> : (
+          <div className="h-[450px] animate-in fade-in duration-500">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={predictions} margin={{ top: 20, right: 30, bottom: 20, left: 60 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <XAxis type="number" dataKey="yearFloat" scale="linear" domain={xDomain}
+                  fontSize={9} angle={-35} textAnchor="end" height={60}
+                  tick={{ fill: "#475569" }} tickFormatter={yf2m} />
+                <YAxis width={80} fontSize={9} tick={{ fill: "#475569" }}
+                  label={{ value: "Manchas/mes", angle: -90, position: "insideLeft", fill: "#94a3b8", fontSize: 10 }} />
+                <Tooltip contentStyle={{ backgroundColor: "#0f172a", border: "1px solid #1e293b", color: "#fff" }} labelFormatter={yf2m} />
+                <Legend verticalAlign="top" height={36} iconType="circle"
+                  wrapperStyle={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.1em" }} />
+                <Line isAnimationActive={false} type="monotone" dataKey="historySsn" name="Continuidad Histórica" stroke="#475569" strokeWidth={1} dot={false} strokeOpacity={0.5} />
+                <Line isAnimationActive={false} type="monotone" dataKey="hathawaySSN" name="Pronóstico Kalman" stroke="#10b981" strokeWidth={2} dot={false} strokeDasharray="6 4" />
+                {predictions[monthIdx]?.yearFloat != null && (
+                  <ReferenceLine x={predictions[monthIdx].yearFloat} stroke="#fff" strokeWidth={1} strokeDasharray="4 4"
+                    label={{ value: predictions[monthIdx].month, position: "top", fill: "#fff", fontSize: 8, fontWeight: "bold" }} />
+                )}
+                <Brush dataKey="yearFloat" height={20} stroke="#1e293b" fill="#020617" tickFormatter={yf2m} />
+              </ComposedChart>
+            </ResponsiveContainer>
           </div>
+        )}
+      </div>
 
-          <div className="bg-white rounded-2xl border border-slate-200 p-6 flex flex-col gap-3 shadow-sm">
-            <div className="flex items-center gap-2 text-red-600 mb-2">
-              <Info className="h-5 w-5" />
-              <h3 className="font-semibold text-sm">Nota Científica</h3>
-            </div>
-            <p className="text-sm text-slate-600 leading-relaxed font-light">
-              Las proyecciones se ajustan automáticamente a medida que se registran nuevos datos en el 
-              <span className="font-semibold text-slate-800 mx-1">Dataset</span>. El ciclo escolar actual (#25) 
-              muestra señales de un máximo adelantado y más intenso de lo estimado originalmente por el consenso científico.
-            </p>
+      {/* Butterfly Diagram */}
+      <div className="mt-8 bg-slate-900 p-10 lg:p-20 rounded-2xl border border-slate-800 shadow-[0_0_80px_rgba(0,0,0,0.5)] min-h-[560px] mb-20">
+        <h3 className="text-xs font-black text-white uppercase tracking-[0.5em] mb-2 flex justify-between items-center border-l-4 border-white pl-8">
+          Reconstrucción Proyectada de la Ley de Spörer
+          <MapIcon className="h-5 w-5 opacity-40" />
+        </h3>
+        <p className="text-[10px] text-slate-400 mb-10 pl-8 font-light italic tracking-widest uppercase">
+          Evolución espacio-temporal de la latitud según la relación exponencial de Hathaway.
+        </p>
+        {!mounted || forecastLoading || !renderButterfly ? <ChartSkeleton height={450} text="Mapeando Latitudes..." /> : (
+          <div className="h-[450px] w-full animate-in fade-in duration-500">
+            <ResponsiveContainer width="100%" height="100%">
+              <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 60 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+                <XAxis type="number" dataKey="year" name="Mes" domain={xDomain}
+                  fontSize={9} angle={-35} textAnchor="end" height={60}
+                  tick={{ fill: "#475569" }} tickFormatter={yf2m} />
+                <YAxis type="number" dataKey="lat" name="Latitud (°)" domain={[-50, 50]}
+                  width={80} fontSize={9} tick={{ fill: "#475569" }}
+                  label={{ value: "Latitud (°)", angle: -90, position: "insideLeft", fill: "#94a3b8", fontSize: 10 }} />
+                <ZAxis dataKey="area" range={[1, 8]} />
+                <Tooltip
+                  cursor={{ strokeDasharray: "3 3" }}
+                  contentStyle={{ backgroundColor: "#0f172a", border: "1px solid #1e293b", color: "#fff" }}
+                  formatter={(v: any, n: string) => [typeof v === "number" ? v.toFixed(2) : v, n]}
+                  labelFormatter={yf2m}
+                />
+                <Legend verticalAlign="top" height={36} iconType="circle"
+                  wrapperStyle={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.1em" }} />
+                {predictions[monthIdx]?.yearFloat != null && (
+                  <ReferenceLine x={predictions[monthIdx].yearFloat} stroke="#ffffff" strokeWidth={1.5} strokeDasharray="4 4"
+                    label={{ value: predictions[monthIdx].month, position: "top", fill: "#ffffff", fontSize: 9, fontWeight: "bold" }} />
+                )}
+                <Scatter isAnimationActive={false} name="Registros Históricos" data={butterflyHistorical} fill="#475569" fillOpacity={0.35} />
+                <Scatter isAnimationActive={false} name="Predicción Adaptativa" data={butterflyForecast} fill="#10b981" fillOpacity={0.75} />
+              </ScatterChart>
+            </ResponsiveContainer>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

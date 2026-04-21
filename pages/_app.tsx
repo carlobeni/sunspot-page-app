@@ -15,9 +15,9 @@ const geistMono = Geist_Mono({
 
 export default function App({ Component, pageProps }: AppProps) {
   return (
-    <div className={`${geistSans.variable} ${geistMono.variable} font-sans h-screen flex overflow-hidden`}>
+    <div className={`${geistSans.variable} ${geistMono.variable} font-sans h-screen flex overflow-hidden bg-[#020617] text-slate-200`}>
       <Sidebar />
-      <main className="flex-1 overflow-y-auto bg-slate-50">
+      <main className="flex-1 overflow-y-auto bg-[#020617]">
         <Component {...pageProps} />
       </main>
     </div>
