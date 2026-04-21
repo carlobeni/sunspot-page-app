@@ -88,47 +88,48 @@ export default function SolarDiskViewer({
   }, [availableDates]);
 
   return (
-    <div className="bg-slate-900 p-10 rounded-2xl border border-slate-800 shadow-2xl flex flex-col w-full h-full">
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 mb-10 border-b border-slate-800 pb-8">
+    <div className="bg-white p-4 lg:p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col w-full h-full animate-in fade-in duration-500">
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 border-b border-slate-100 pb-4">
         <div>
-          <h2 className="text-3xl font-serif font-black text-white uppercase tracking-widest leading-none">
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <Search className="h-5 w-5 text-indigo-600" />
             Visor Heliográfico Histórico
           </h2>
-          <p className="text-[10px] text-slate-500 font-black uppercase mt-3 tracking-widest">
+          <p className="text-sm text-slate-500 mt-1 font-medium hidden md:block">
             {date ? `Registro: ${date}` : "Cargando observación..."}
           </p>
         </div>
       </div>
 
       {error && (
-        <div className="bg-red-950/20 border border-red-900/40 text-red-400 px-6 py-4 rounded-xl mb-8 text-[10px] uppercase font-black tracking-widest">
+        <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-6 text-sm font-medium">
           {error}
         </div>
       )}
 
       {solarData && (
-        <div className="flex flex-col gap-16">
+        <div className="flex flex-col gap-8">
           <div 
-            className="flex justify-center bg-black rounded-2xl overflow-hidden p-6 relative min-h-[600px] lg:h-[800px] border border-slate-800 shadow-inner"
+            className="flex justify-center bg-slate-50 rounded-xl overflow-hidden p-4 relative min-h-[400px] lg:h-[600px] border border-slate-200 shadow-inner"
             onMouseMove={handleMouseMove}
           >
              {(!imgLoaded || loading) && (
-               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-black/95">
-                 <Loader2 className="h-12 w-12 text-slate-700 animate-spin mb-4" />
-                 <div className="bg-slate-900 px-4 py-2 border border-slate-800 rounded-xl">
-                    <p className="text-[9px] text-slate-500 font-black uppercase tracking-[0.3em] animate-pulse">
+               <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-50/80 backdrop-blur-sm">
+                 <Loader2 className="h-10 w-10 text-indigo-600 animate-spin mb-4" />
+                 <div className="bg-white px-4 py-2 border border-slate-200 rounded-lg shadow-sm">
+                    <p className="text-xs text-indigo-600 font-bold animate-pulse uppercase tracking-widest">
                       {loading ? "Sincronizando..." : "Renderizando..."}
                     </p>
                  </div>
                </div>
              )}
-            <div className="relative w-full max-w-[550px] aspect-square rounded-2xl border border-slate-700 overflow-hidden shadow-[0_0_80px_rgba(255,255,255,0.02)]" 
+            <div className="relative w-full max-w-[500px] aspect-square rounded-full border border-slate-300 overflow-hidden bg-black shadow-lg" 
                  style={{ aspectRatio: '1/1' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
                 src={solarData.fullDiskUrl}
                 alt="Solar Full Disk"
-                className="absolute inset-0 w-full h-full object-contain grayscale brightness-110"
+                className="absolute inset-0 w-full h-full object-contain"
                 crossOrigin="anonymous"
                 onLoad={() => setImgLoaded(true)}
               />
@@ -139,7 +140,7 @@ export default function SolarDiskViewer({
                     className="absolute inset-0 w-full h-full pointer-events-auto"
                     style={{ zIndex: 5 }}
                 >
-                    <g opacity="0.5" pointerEvents="none" stroke="#0ea5e9" strokeWidth="1" strokeDasharray="5 5">
+                    <g opacity="0.4" pointerEvents="none" stroke="#fff" strokeWidth="1.5" strokeDasharray="6 4">
                         {[-60, -30, 0, 30, 60].map(phi => {
                             const R = (solarData.fullDiskMetadata.width || 1024) / 2;
                             const x0 = R;
@@ -148,8 +149,8 @@ export default function SolarDiskViewer({
                             const y_p = y0 - R * Math.sin(phi * Math.PI / 180);
                             return (
                                 <g key={`lat-${phi}`}>
-                                    <ellipse cx={x0} cy={y_p} rx={r_p} ry={r_p * 0.1} fill="none" />
-                                    <text x={x0 + r_p + 10} y={y_p + 5} fill="white" fontSize="20" fontWeight="900" stroke="none">{phi}°</text>
+                                    <ellipse cx={x0} cy={y_p} rx={r_p} ry={r_p * 0.15} fill="none" />
+                                    <text x={x0 + r_p + 15} y={y_p + 5} fill="white" fontSize="24" fontWeight="bold" stroke="none" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>{phi}°</text>
                                 </g>
                             );
                         })}
@@ -161,7 +162,7 @@ export default function SolarDiskViewer({
                             return (
                                 <g key={`lon-${lam}`}>
                                     <ellipse cx={x0} cy={y0} rx={rx} ry={R} fill="none" />
-                                    <text x={x0 + rx} y={y0 + R + 30} fill="white" fontSize="20" fontWeight="900" textAnchor="middle" stroke="none">{lam}°</text>
+                                    <text x={x0 + rx} y={y0 + R + 40} fill="white" fontSize="24" fontWeight="bold" textAnchor="middle" stroke="none" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>{lam}°</text>
                                 </g>
                             );
                         })}
@@ -188,20 +189,20 @@ export default function SolarDiskViewer({
                             y={-h / 2}
                             width={w}
                             height={h}
-                            stroke={isHovered ? "#fff" : "#475569"} 
-                            fill={isHovered ? "rgba(255, 255, 255, 0.1)" : "transparent"}
-                            strokeWidth={isHovered ? 6 : 3}
+                            stroke={isHovered ? "#fff" : "#cbd5e1"} 
+                            fill={isHovered ? "rgba(255, 255, 255, 0.2)" : "transparent"}
+                            strokeWidth={isHovered ? 6 : 4}
                             className="transition-all duration-300"
                         />
-                        <circle r="4" fill="white" />
+                        <circle r="6" fill="#fff" className={isHovered ? "animate-pulse" : ""} />
                         <text
-                            x={w / 2 + 15}
+                            x={w / 2 + 10}
                             y={10}
-                            fill="white"
-                            fontSize="32"
-                            fontWeight="900"
-                            className={`transition-opacity ${isHovered ? "opacity-100 scale-110" : "opacity-0 group-hover:opacity-100"}`}
-                            style={{ textShadow: '2px 2px 10px black' }}
+                            fill="#fff"
+                            fontSize="24"
+                            fontWeight="800"
+                            className={`transition-opacity ${isHovered ? "opacity-100 scale-105" : "opacity-0 group-hover:opacity-100"}`}
+                            style={{ textShadow: '2px 2px 6px rgba(0,0,0,0.9)' }}
                         >
                             {crop.mcintosh_full || "Spot"}
                         </text>
@@ -212,60 +213,61 @@ export default function SolarDiskViewer({
               )}
             </div>
             
-            {/* Tooltip Popup */}
-            {hoveredCrop && hoveredCrop.cropUrl && (
+             {hoveredCrop && hoveredCrop.cropUrl && (
                 <div 
-                  className="fixed pointer-events-none z-50 bg-slate-900 border border-slate-700 rounded-2xl p-4 shadow-2xl flex flex-col gap-4 animate-in fade-in zoom-in-95 duration-100"
+                  className="fixed pointer-events-none z-50 bg-white border border-slate-200 rounded-lg p-3 shadow-2xl flex flex-col gap-3 animate-in fade-in zoom-in-95 duration-150"
                   style={{ top: hoverPos.y + 20, left: hoverPos.x + 20, width: 220 }}
                 >
-                  <img src={hoveredCrop.cropUrl} alt="Crop" className="w-full aspect-square object-cover grayscale contrast-150 rounded-xl border border-slate-800 bg-black" crossOrigin="anonymous"/>
+                  <div className="relative aspect-square w-full rounded-md overflow-hidden bg-black border border-slate-100 shadow-sm">
+                    <img src={hoveredCrop.cropUrl} alt="Crop" className="w-full h-full object-cover" crossOrigin="anonymous"/>
+                  </div>
                   <div className="text-center">
-                    <span className="text-[10px] uppercase font-black text-white tracking-widest block mb-1">Sector Lat: {hoveredCrop.lat.toFixed(1)}°</span>
-                    <span className="text-[9px] uppercase font-bold text-slate-500 tracking-tighter block">{hoveredCrop.mcintosh_full || "Spot"}</span>
+                    <span className="text-xs font-bold text-slate-900 block mb-1" style={{ fontSize: '10px' }}>LAT: {hoveredCrop.lat.toFixed(1)}°</span>
+                    <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest block">{hoveredCrop.mcintosh_full || "Spot"}</span>
                   </div>
                 </div>
             )}
           </div>
 
           {/* Bottom Styled Table */}
-          <div className="bg-black border border-slate-800 rounded-2xl overflow-hidden shadow-2xl">
-             <div className="bg-slate-900 border-b border-slate-800 p-8 flex justify-between items-center">
-                <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Detalle Cartográfico Espacial</h3>
-                <span className="text-[9px] font-black text-white bg-slate-800 px-4 py-2 rounded-lg">{solarData.crops.length} Registros Activos</span>
+          <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+             <div className="bg-slate-50 p-4 sm:p-6 flex justify-between items-center border-b border-slate-200">
+                <h3 className="text-sm font-bold text-slate-900">Detalle Cartográfico Espacial</h3>
+                <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-md">{solarData.crops.length} Registros Activos</span>
              </div>
              {solarData.crops.length > 0 ? (
                <div className="overflow-x-auto">
                  <table className="w-full text-left border-collapse">
                    <thead>
-                     <tr className="bg-slate-900/50 text-[9px] font-black uppercase text-slate-500 tracking-widest">
-                       <th className="p-6 border-b border-slate-800 pl-8">Ref ID</th>
-                       <th className="p-6 border-b border-slate-800">Latitud</th>
-                       <th className="p-6 border-b border-slate-800">Longitud</th>
-                       <th className="p-6 border-b border-slate-800">MacIntosh</th>
-                       <th className="p-6 border-b border-slate-800">Mag. Class</th>
+                     <tr className="bg-white text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                       <th className="p-4 border-b border-slate-100 pl-6">Ref ID</th>
+                       <th className="p-4 border-b border-slate-100">Latitud</th>
+                       <th className="p-4 border-b border-slate-100">Longitud</th>
+                       <th className="p-4 border-b border-slate-100">MacIntosh</th>
+                       <th className="p-4 border-b border-slate-100">Mag. Class</th>
                      </tr>
                    </thead>
-                   <tbody className="text-[10px] font-medium text-slate-300">
+                   <tbody className="text-sm text-slate-600">
                      {solarData.crops.map((c, i) => (
                         <tr 
                           key={c.id} 
-                          className="hover:bg-slate-800/40 transition-colors border-b border-slate-800/50 last:border-0 group cursor-crosshair"
+                          className="hover:bg-slate-50 transition-colors border-b border-slate-100 last:border-0 cursor-pointer"
                           onMouseEnter={() => setHoveredCrop(c)} 
                           onMouseLeave={() => setHoveredCrop(null)}
                           onMouseMove={handleMouseMove}
                         >
-                           <td className="p-6 pl-8 font-mono font-black text-white group-hover:text-[#0ea5e9] transition-colors">#{String(i + 1).padStart(2,'0')}</td>
-                           <td className="p-6">{c.lat.toFixed(2)}°</td>
-                           <td className="p-6">{c.lon.toFixed(2)}°</td>
-                           <td className="p-6 text-amber-400 font-bold">{c.mcintosh_full || "-"}</td>
-                           <td className="p-6 text-sky-400 font-bold">{c.mag_class || "-"}</td>
+                           <td className="p-4 pl-6 font-mono text-slate-400 font-medium">#{String(i + 1).padStart(2,'0')}</td>
+                           <td className="p-4 font-medium text-slate-900">{c.lat.toFixed(2)}°</td>
+                           <td className="p-4 font-medium text-slate-900">{c.lon.toFixed(2)}°</td>
+                           <td className="p-4 text-slate-600 font-semibold">{c.mcintosh_full || "-"}</td>
+                           <td className="p-4 text-slate-600 font-semibold">{c.mag_class || "-"}</td>
                         </tr>
                      ))}
                    </tbody>
                  </table>
                </div>
              ) : (
-                <div className="p-16 text-center text-[10px] text-slate-500 font-black uppercase tracking-widest italic">
+                <div className="p-8 text-center text-sm font-medium text-slate-400">
                    No existen manchas detectadas en este registro espacial.
                 </div>
              )}

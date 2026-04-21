@@ -16,15 +16,15 @@ const yf2m = (v: any) => {
 };
 
 // ─── Chart skeleton ───────────────────────────────────────────────────────────
-function ChartSkeleton({ height = 450, text = "Calculando…" }: { height?: number, text?: string }) {
+function ChartSkeleton({ height = 400, text = "Calculando…" }: { height?: number, text?: string }) {
   return (
     <div
       style={{ height }}
-      className="w-full rounded-xl bg-slate-800/40 animate-pulse flex items-center justify-center"
+      className="w-full rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center animate-pulse shadow-sm"
     >
-      <div className="flex flex-col items-center gap-4 opacity-50">
-        <div className="w-10 h-10 border-4 border-slate-500 border-t-white rounded-xl animate-spin" />
-        <span className="text-[10px] text-slate-400 uppercase tracking-widest font-black">{text}</span>
+      <div className="flex flex-col items-center gap-3 opacity-60">
+        <div className="w-8 h-8 border-2 border-slate-200 border-t-indigo-500 rounded-full animate-spin" />
+        <span className="text-sm text-slate-500 font-bold">{text}</span>
       </div>
     </div>
   );
@@ -117,10 +117,10 @@ export default function TrendsPage() {
   const forecastOptions   = useMemo(() => predictions.filter((p: any) => p.isForecast), [predictions]);
 
   if (baseLoading) return (
-    <div className="flex items-center justify-center min-h-screen bg-[#020617]">
+    <div className="flex items-center justify-center min-h-screen bg-slate-50">
       <div className="flex flex-col items-center gap-6">
-        <div className="w-16 h-16 border-4 border-slate-700 border-t-white rounded-xl animate-spin" />
-        <span className="text-white font-serif font-black italic tracking-widest animate-pulse uppercase">
+        <div className="w-16 h-16 border-4 border-slate-200 border-t-indigo-600 rounded-xl shadow-sm animate-spin" />
+        <span className="text-slate-500 font-bold tracking-widest animate-pulse uppercase">
           Sincronizando Ciclo…
         </span>
       </div>
@@ -128,136 +128,129 @@ export default function TrendsPage() {
   );
 
   return (
-    <div className="p-5 pt-24 lg:p-12 max-w-screen-2xl mx-auto min-h-screen bg-[#020617] text-slate-200">
+    <div className="p-4 pt-20 lg:p-8 max-w-screen-2xl mx-auto min-h-screen bg-slate-50 text-slate-900">
 
       {/* Header */}
-      <div className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-8 border-b border-slate-800 pb-12">
+      <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <div className="flex items-center gap-2 mb-4">
-            <span className="px-4 py-1 bg-slate-900 text-slate-400 rounded-lg text-[9px] font-black uppercase tracking-[0.3em] border border-slate-800">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="px-3 py-1 bg-white text-slate-600 rounded-md text-[10px] md:text-xs font-bold border border-slate-200 shadow-sm uppercase tracking-wider">
               Hathaway Model v1.0
             </span>
           </div>
-          <h1 className="text-4xl font-serif font-black text-white tracking-widest uppercase">Pronóstico</h1>
-          <p className="text-slate-500 mt-4 text-xl font-light tracking-tight max-w-2xl leading-relaxed italic border-l-2 border-slate-800 pl-6">
-            Ley de Spörer proyectada sobre el{" "}
-            <span className="text-white font-black underline decoration-slate-700 underline-offset-8">Ciclo Solar 25</span>.
-          </p>
+          <h1 className="text-xl md:text-3xl font-bold text-slate-900 hidden md:block">Pronóstico Temporal</h1>
         </div>
       </div>
 
       {/* Simplified Prediction Horizon Control */}
-      <div className="mb-12 flex items-center justify-between border-b border-slate-800/50 pb-6">
-        <h2 className="text-xl font-serif font-black text-white italic tracking-widest opacity-80 hidden sm:block">
-           Proyección
+      <div className="mb-8 flex flex-col sm:flex-row items-center justify-between border-b border-slate-200 pb-4 gap-4">
+        <h2 className="text-base md:text-lg font-bold text-slate-800 uppercase tracking-tight">
+           Proyección Ciclo 25
         </h2>
         
-        <div className="flex items-center gap-4">
-          <div className="relative group">
-            <div className="flex items-center gap-3 bg-slate-900 border border-slate-700 hover:border-[#10b981] transition-all rounded-full px-5 py-2 shadow-lg relative">
-              <Clock className="w-4 h-4 text-[#10b981] pointer-events-none" />
-              <div className="flex flex-col relative">
-                <span className="text-[8px] uppercase tracking-[0.2em] text-slate-500 font-bold leading-none mb-0.5 pointer-events-none">
-                  Ventana de Predicción
-                </span>
+        <div className="flex items-center gap-3 w-full sm:w-auto">
+          <div className="relative group flex-1 sm:flex-none">
+            <div className="flex items-center gap-2 bg-white border border-slate-200 hover:border-indigo-300 transition-all rounded-lg px-4 py-2 w-full shadow-sm">
+              <Clock className="w-4 h-4 text-indigo-500 pointer-events-none" />
+              <div className="flex flex-col relative flex-1">
                 <select
                   value={forecastHorizon}
                   onChange={(e) => handleHorizonChange(parseInt(e.target.value))}
-                  className="bg-transparent text-white font-black text-[11px] sm:text-xs uppercase tracking-widest outline-none appearance-none cursor-pointer w-[120px] sm:w-[140px]"
+                  className="bg-transparent text-slate-900 font-bold text-sm outline-none appearance-none cursor-pointer w-full pr-6 py-1"
                 >
-                  <option value={12} className="bg-slate-900 text-slate-200">1 Año a futuro</option>
-                  <option value={24} className="bg-slate-900 text-slate-200">2 Años a futuro</option>
-                  <option value={60} className="bg-slate-900 text-slate-200">5 Años a futuro</option>
-                  <option value={120} className="bg-slate-900 text-slate-200">10 Años a futuro</option>
+                  <option value={12} className="bg-white">Próximo Año</option>
+                  <option value={24} className="bg-white">Próximos 2 Años</option>
+                  <option value={60} className="bg-white">Próximos 5 Años</option>
+                  <option value={120} className="bg-white">Próxima Década</option>
                 </select>
               </div>
-              <ChevronDown className="w-4 h-4 text-slate-500 group-hover:text-[#10b981] transition-colors pointer-events-none absolute right-4" />
+              <ChevronDown className="w-4 h-4 text-slate-400 pointer-events-none absolute right-3" />
             </div>
           </div>
           
           <button
             onClick={() => fetchForecast(forecastHorizon)}
             disabled={forecastLoading}
-            className="flex items-center justify-center p-3.5 rounded-full bg-slate-800 hover:bg-slate-700 text-[#10b981] disabled:opacity-50 transition-colors shadow-lg"
+            className="flex items-center justify-center p-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 transition-all shrink-0 shadow-md"
             title="Sincronizar Predicción"
           >
-            <Zap className={`h-4 w-4 ${forecastLoading ? 'animate-pulse' : ''}`} />
+            <Zap className={`h-5 w-5 ${forecastLoading ? 'animate-spin' : ''}`} />
           </button>
         </div>
       </div>
 
-      {/* SSN Chart */}
-      <div className="bg-slate-900 p-10 lg:p-20 rounded-2xl border border-slate-800 shadow-[0_0_80px_rgba(0,0,0,0.5)] min-h-[560px]">
-        <h3 className="text-xs font-black text-white uppercase tracking-[0.5em] mb-2 flex justify-between items-center border-l-4 border-white pl-8">
-          SSN
-          <TrendingUp className="h-5 w-5 opacity-40" />
+        {/* SSN Chart */}
+      <div className="bg-white p-4 lg:p-8 rounded-xl border border-slate-200 shadow-sm min-h-[400px]">
+        <h3 className="text-sm font-bold text-slate-500 mb-1 flex items-center justify-between uppercase tracking-widest">
+          <span>Sunspot Number (SSN)</span>
+          <TrendingUp className="h-5 w-5 opacity-40 text-indigo-600" />
         </h3>
-        <p className="text-[10px] text-slate-400 mb-10 pl-8 font-light italic tracking-widest uppercase">
-          Amplitud suavizada mediante Filtro de Kalman Adaptativo.
-        </p>
-        {forecastLoading || !renderSsn ? <ChartSkeleton height={450} text="Generando Serie SSN..." /> : (
-          <div className="h-[450px] animate-in fade-in duration-500">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={predictions} margin={{ top: 20, right: 30, bottom: 20, left: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+        
+        {!mounted || forecastLoading || !renderSsn ? <ChartSkeleton height={400} text="Generando Serie SSN..." /> : (
+          <div className="w-full overflow-x-auto pb-4 mt-6">
+            <div className="h-[450px] min-w-[800px] bg-white rounded-lg flex items-center justify-center">
+              <ComposedChart width={800} height={450} data={predictions} margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                 <XAxis type="number" dataKey="yearFloat" scale="linear" domain={xDomain}
-                  fontSize={9} angle={-35} textAnchor="end" height={60}
-                  tick={{ fill: "#475569" }} tickFormatter={yf2m} />
-                <YAxis width={80} fontSize={9} tick={{ fill: "#475569" }}
-                  label={{ value: "Manchas/mes", angle: -90, position: "insideLeft", fill: "#94a3b8", fontSize: 10 }} />
-                <Tooltip contentStyle={{ backgroundColor: "#0f172a", border: "1px solid #1e293b", color: "#fff" }} labelFormatter={yf2m} />
-                <Legend verticalAlign="top" height={36} iconType="circle"
-                  wrapperStyle={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.1em" }} />
-                <Line isAnimationActive={false} type="monotone" dataKey="historySsn" name="Continuidad Histórica" stroke="#475569" strokeWidth={1} dot={false} strokeOpacity={0.5} />
-                <Line isAnimationActive={false} type="monotone" dataKey="hathawaySSN" name="Pronóstico Kalman" stroke="#10b981" strokeWidth={2} dot={false} strokeDasharray="6 4" />
+                  fontSize={10} angle={-35} textAnchor="end" height={60}
+                  tick={{ fill: "#64748b", fontWeight: 700 }} tickFormatter={yf2m} />
+                <YAxis hide={true} />
+                <Tooltip 
+                  contentStyle={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", color: "#0f172a", borderRadius: "12px", boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)", padding: "12px" }} 
+                  itemStyle={{ fontWeight: "bold", fontSize: "12px" }}
+                  labelStyle={{ fontWeight: "800", color: "#1e293b", marginBottom: "4px" }}
+                  labelFormatter={yf2m} 
+                />
+                <Legend verticalAlign="top" height={40} iconType="circle"
+                  wrapperStyle={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 800, paddingBottom: "20px" }} />
+                <Line isAnimationActive={false} type="monotone" dataKey="historySsn" name="Histórico" stroke="#94a3b8" strokeWidth={3} dot={false} strokeOpacity={0.6} />
+                <Line isAnimationActive={false} type="monotone" dataKey="hathawaySSN" name="Kalman Filter" stroke="#4f46e5" strokeWidth={3} dot={false} strokeDasharray="8 6" />
                 {predictions[monthIdx]?.yearFloat != null && (
-                  <ReferenceLine x={predictions[monthIdx].yearFloat} stroke="#fff" strokeWidth={1} strokeDasharray="4 4"
-                    label={{ value: predictions[monthIdx].month, position: "top", fill: "#fff", fontSize: 8, fontWeight: "bold" }} />
+                  <ReferenceLine x={predictions[monthIdx].yearFloat} stroke="#4f46e5" strokeWidth={2} strokeDasharray="4 4"
+                    label={{ value: predictions[monthIdx].month, position: "top", fill: "#4f46e5", fontSize: 10, fontWeight: "bold" }} />
                 )}
-                <Brush dataKey="yearFloat" height={20} stroke="#1e293b" fill="#020617" tickFormatter={yf2m} />
+                <Brush dataKey="yearFloat" height={24} stroke="#e2e8f0" fill="#f8fafc" tickFormatter={yf2m} />
               </ComposedChart>
-            </ResponsiveContainer>
+            </div>
           </div>
         )}
       </div>
 
       {/* Butterfly Diagram */}
-      <div className="mt-8 bg-slate-900 p-10 lg:p-20 rounded-2xl border border-slate-800 shadow-[0_0_80px_rgba(0,0,0,0.5)] min-h-[560px] mb-20">
-        <h3 className="text-xs font-black text-white uppercase tracking-[0.5em] mb-2 flex justify-between items-center border-l-4 border-white pl-8">
-          Reconstrucción Proyectada de la Ley de Spörer
-          <MapIcon className="h-5 w-5 opacity-40" />
+      <div className="mt-6 bg-white p-4 lg:p-8 rounded-xl border border-slate-200 shadow-sm min-h-[400px] mb-12">
+        <h3 className="text-sm font-bold text-slate-500 mb-1 flex items-center justify-between uppercase tracking-widest">
+          <span>Distribución Latitudinal (Spörer)</span>
+          <MapIcon className="h-5 w-5 opacity-40 text-indigo-600" />
         </h3>
-        <p className="text-[10px] text-slate-400 mb-10 pl-8 font-light italic tracking-widest uppercase">
-          Evolución espacio-temporal de la latitud según la relación exponencial de Hathaway.
-        </p>
-        {!mounted || forecastLoading || !renderButterfly ? <ChartSkeleton height={450} text="Mapeando Latitudes..." /> : (
-          <div className="h-[450px] w-full animate-in fade-in duration-500">
-            <ResponsiveContainer width="100%" height="100%">
-              <ScatterChart margin={{ top: 20, right: 30, bottom: 20, left: 60 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" vertical={false} />
+        
+        {!mounted || forecastLoading || !renderButterfly ? <ChartSkeleton height={400} text="Mapeando Latitudes..." /> : (
+          <div className="w-full overflow-x-auto pb-4 mt-6">
+            <div className="h-[450px] min-w-[800px] bg-white rounded-lg flex items-center justify-center">
+              <ScatterChart width={800} height={450} margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                 <XAxis type="number" dataKey="year" name="Mes" domain={xDomain}
-                  fontSize={9} angle={-35} textAnchor="end" height={60}
-                  tick={{ fill: "#475569" }} tickFormatter={yf2m} />
-                <YAxis type="number" dataKey="lat" name="Latitud (°)" domain={[-50, 50]}
-                  width={80} fontSize={9} tick={{ fill: "#475569" }}
-                  label={{ value: "Latitud (°)", angle: -90, position: "insideLeft", fill: "#94a3b8", fontSize: 10 }} />
-                <ZAxis dataKey="area" range={[1, 8]} />
+                  fontSize={10} angle={-35} textAnchor="end" height={60}
+                  tick={{ fill: "#64748b", fontWeight: 700 }} tickFormatter={yf2m} />
+                <YAxis dataKey="lat" hide={true} domain={[-50, 50]} />
+                <ZAxis dataKey="area" range={[2, 12]} />
                 <Tooltip
-                  cursor={{ strokeDasharray: "3 3" }}
-                  contentStyle={{ backgroundColor: "#0f172a", border: "1px solid #1e293b", color: "#fff" }}
+                  cursor={{ strokeDasharray: "3 3", stroke: "#94a3b8" }}
+                  contentStyle={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", color: "#0f172a", borderRadius: "12px", boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)", padding: "12px" }}
+                  itemStyle={{ fontWeight: "bold", fontSize: "12px" }}
+                  labelStyle={{ fontWeight: "800", color: "#1e293b", marginBottom: "4px" }}
                   formatter={(v: any, n: any) => [typeof v === "number" ? v.toFixed(2) : v, n]}
                   labelFormatter={yf2m}
                 />
-                <Legend verticalAlign="top" height={36} iconType="circle"
-                  wrapperStyle={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.1em" }} />
+                <Legend verticalAlign="top" height={40} iconType="circle"
+                  wrapperStyle={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 800, paddingBottom: "20px" }} />
                 {predictions[monthIdx]?.yearFloat != null && (
-                  <ReferenceLine x={predictions[monthIdx].yearFloat} stroke="#ffffff" strokeWidth={1.5} strokeDasharray="4 4"
-                    label={{ value: predictions[monthIdx].month, position: "top", fill: "#ffffff", fontSize: 9, fontWeight: "bold" }} />
+                  <ReferenceLine x={predictions[monthIdx].yearFloat} stroke="#4f46e5" strokeWidth={2} strokeDasharray="4 4"
+                    label={{ value: predictions[monthIdx].month, position: "top", fill: "#4f46e5", fontSize: 10, fontWeight: "bold" }} />
                 )}
-                <Scatter isAnimationActive={false} name="Registros Históricos" data={butterflyHistorical} fill="#475569" fillOpacity={0.35} />
-                <Scatter isAnimationActive={false} name="Predicción Adaptativa" data={butterflyForecast} fill="#10b981" fillOpacity={0.75} />
+                <Scatter isAnimationActive={false} name="Registros Históricos" data={butterflyHistorical} fill="#94a3b8" fillOpacity={0.4} />
+                <Scatter isAnimationActive={false} name="Modelo Generativo" data={butterflyForecast} fill="#4f46e5" fillOpacity={0.7} />
               </ScatterChart>
-            </ResponsiveContainer>
+            </div>
           </div>
         )}
       </div>

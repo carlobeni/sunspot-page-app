@@ -166,58 +166,58 @@ export default function RecordsPage() {
   };
 
   if (loading) return (
-    <div className="flex items-center justify-center min-h-screen bg-[#020617]">
-        <div className="flex flex-col items-center gap-6">
-            <div className="w-16 h-16 border-4 border-slate-700 border-t-white rounded-xl animate-spin" />
-            <span className="text-white font-serif font-black italic tracking-widest animate-pulse uppercase">Fetching Records...</span>
+    <div className="flex items-center justify-center min-h-screen bg-slate-50">
+        <div className="flex flex-col items-center gap-4">
+            <div className="w-10 h-10 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin" />
+            <span className="text-slate-600 font-medium text-sm animate-pulse">Cargando Registros...</span>
         </div>
     </div>
   );
 
   return (
-    <div className="p-5 pt-24 lg:p-12 max-w-screen-2xl mx-auto min-h-screen bg-[#020617] text-slate-200">
-      {/* Header Noir */}
-      <div className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-10 border-b border-slate-800 pb-12">
+    <div className="p-4 pt-20 lg:p-8 max-w-screen-2xl mx-auto min-h-screen flex flex-col bg-slate-50 text-slate-900">
+      {/* Header */}
+      <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-4xl font-serif font-black text-white tracking-widest uppercase flex items-center gap-8">
-             <Calendar className="h-12 w-12 text-slate-500" />
-             Registros
+          <h1 className="text-xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
+             <Calendar className="h-6 w-6 md:h-8 md:w-8 text-indigo-600" />
+             Archivos
           </h1>
-          <p className="text-slate-500 mt-6 text-xl font-light italic border-l-2 border-slate-800 pl-8 tracking-tight">
-            Archivo histórico de observaciones. Los registros disponibles se indican en <span className="text-white font-black underline underline-offset-8">Blanco/Plata</span>.
+          <p className="text-slate-500 mt-1.5 text-sm md:text-base font-medium max-w-xl hidden md:block">
+            Archivo histórico de observaciones. Los registros disponibles se indican con marcas en el calendario.
           </p>
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-4 gap-12">
-        {/* Calendar Column Noir */}
-        <div className="lg:col-span-1 space-y-10">
-          <div className="bg-slate-900 p-8 rounded-2xl border border-slate-800 shadow-2xl">
-            <div className="space-y-6 mb-10">
-                <div className="grid grid-cols-1 gap-4">
+      <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+        {/* Calendar Column */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-white p-4 sm:p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col h-full">
+            <div className="space-y-4 mb-6">
+                <div className="flex gap-2">
                     <select 
                         value={viewDate.getMonth()} 
                         onChange={(e) => handleMonthChange(parseInt(e.target.value))}
-                        className="w-full bg-black border border-slate-800 rounded-xl px-6 py-4 text-[10px] font-black text-white outline-none focus:border-white transition-all appearance-none text-center uppercase tracking-[0.3em]"
+                        className="w-full bg-white border border-slate-200 shadow-sm rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-500 transition-all appearance-none text-center"
                     >
                         {months.map((m, i) => <option key={m} value={i}>{m}</option>)}
                     </select>
                     <select 
                         value={viewDate.getFullYear()} 
                         onChange={(e) => handleYearChange(parseInt(e.target.value))}
-                        className="w-full bg-white text-black rounded-xl px-6 py-4 text-[10px] font-black outline-none transition-all appearance-none text-center uppercase tracking-[0.3em]"
+                        className="w-full bg-white border border-slate-200 shadow-sm rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-500 transition-all appearance-none text-center"
                     >
                         {years.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
                 </div>
             </div>
             
-            <div className="grid grid-cols-7 gap-px bg-slate-800 border border-slate-800 mb-8 shadow-inner">
+            <div className="grid grid-cols-7 gap-1 mb-6">
                 {['D','L','M','M','J','V','S'].map((d, i) => (
-                    <div key={i} className="bg-black text-[9px] font-black text-slate-600 text-center py-4 uppercase tracking-tighter">{d}</div>
+                    <div key={i} className="text-xs font-bold text-slate-400 text-center py-2">{d}</div>
                 ))}
                 {calendarDays.map((d, i) => {
-                    if (!d) return <div key={`empty-${i}`} className="bg-black/40" />;
+                    if (!d) return <div key={`empty-${i}`} className="aspect-square" />;
                     const isSelected = selectedDate === d.dateStr;
                     return (
                         <button 
@@ -225,12 +225,12 @@ export default function RecordsPage() {
                             disabled={!d.hasRecord}
                             onClick={() => setSelectedDate(d.dateStr)}
                             className={cn(
-                                "aspect-square flex flex-col items-center justify-center text-[10px] rounded-xl transition-all relative border border-slate-900/50",
+                                "aspect-square flex flex-col items-center justify-center text-sm rounded-md transition-all relative border border-transparent font-medium",
                                 d.hasRecord 
                                     ? isSelected
-                                        ? "bg-white text-black font-black z-10 scale-105 shadow-2xl shadow-white/20"
-                                        : "bg-slate-800 text-white font-bold hover:bg-slate-700 border-slate-700 shadow-inner"
-                                    : "text-slate-800 bg-black/60 cursor-default opacity-50"
+                                        ? "bg-indigo-600 text-white font-bold shadow-md"
+                                        : "bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-indigo-600"
+                                    : "text-slate-400 cursor-not-allowed opacity-50"
                             )}
                         >
                             {d.day}
@@ -239,62 +239,57 @@ export default function RecordsPage() {
                 })}
             </div>
             
-            <div className="pt-8 border-t border-slate-800 space-y-6">
-                <div className="flex items-center gap-4">
-                    <div className="h-4 w-4 bg-slate-800 border border-slate-700 rounded-md shadow-inner" />
-                    <span className="text-[10px] text-slate-500 font-black uppercase tracking-widest">Registros Disponibles</span>
+            <div className="pt-6 border-t border-slate-100 mt-auto">
+                <div className="flex items-center gap-3 mb-3">
+                    <div className="h-3 w-3 bg-indigo-50 border border-indigo-200 rounded-sm" />
+                    <span className="text-xs text-slate-500 font-semibold">Registros Disponibles</span>
                 </div>
-                <div className="bg-black p-6 border border-slate-800">
-                    <p className="text-[9px] text-slate-500 leading-relaxed font-light italic uppercase tracking-tighter">
-                        La base de datos contiene {data?.availableDates?.length || 0} registros validados desde 2010.
-                    </p>
-                </div>
+                <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100">
+                    La base de datos contiene {data?.availableDates?.length || 0} registros validados desde 2010.
+                </p>
             </div>
           </div>
 
-          {/* Database Info Noir */}
-          <div className="bg-white p-8 rounded-2xl text-black shadow-2xl relative overflow-hidden group">
-             <div className="absolute top-0 right-0 p-6 opacity-[0.03] group-hover:opacity-[0.08] transition-opacity">
-                 <Search className="h-24 w-24" />
-             </div>
-             <h3 className="text-[10px] font-black mb-6 relative z-10 uppercase tracking-[0.4em]">Vault Integrity</h3>
-             <div className="space-y-6 relative z-10">
-                <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-tighter">
-                    <span className="text-slate-400">Health Check</span>
-                    <span className="font-mono text-black">100% Valid</span>
+          {/* Database Info */}
+          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group">
+             <h3 className="text-sm font-bold text-slate-900 mb-4 relative z-10">Integridad de DB</h3>
+             <div className="space-y-4 relative z-10">
+                <div className="flex justify-between items-center text-xs font-bold">
+                    <span className="text-slate-500">Status</span>
+                    <span className="text-emerald-700">100% Válido</span>
                 </div>
-                <div className="w-full bg-slate-100 h-1 rounded-xl overflow-hidden">
-                    <div className="bg-black h-full w-full" />
+                <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
+                    <div className="bg-emerald-500 h-full w-full" />
                 </div>
-                <div className="flex items-center gap-3 bg-black text-white text-[9px] font-black uppercase tracking-[0.3em] p-4 rounded-xl">
-                    <CheckCircle2 className="h-4 w-4" />
-                    Secure Connection
+                <div className="flex items-center gap-2 bg-emerald-50 text-emerald-800 text-xs font-semibold p-3 rounded-lg border border-emerald-100">
+                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                    Conexión Segura
                 </div>
              </div>
           </div>
         </div>
 
-        {/* Viewer Column Noir */}
-        <div className="lg:col-span-3">
-            <div className="space-y-12 animate-in fade-in slide-in-from-bottom-8 duration-1000">
+        {/* Viewer Column */}
+        <div className="lg:col-span-3 flex flex-col">
+            <div className="flex-1 animate-in fade-in flex flex-col relative h-full">
                 <SolarDiskViewer 
                     availableDates={data?.availableDates || []} 
                     date={selectedDate}
                 />
                 
-                {/* Download Button Noir */}
-                <div className="flex justify-start pl-10 -mt-24 relative z-20">
+                {/* Download Button */}
+                <div className="mt-6 flex justify-start sm:absolute sm:top-6 sm:right-6 sm:mt-0">
                      <button 
                         onClick={handleDownloadPDF}
                         disabled={downloading}
-                        className="flex items-center gap-4 px-12 py-6 bg-white text-black rounded-xl font-black text-[10px] uppercase tracking-[0.5em] shadow-[0_0_50px_rgba(255,255,255,0.1)] hover:bg-slate-200 transition-all active:scale-95 group disabled:opacity-30"
+                        className="flex items-center gap-2 px-4 py-2 bg-white text-slate-700 border border-slate-200 hover:border-indigo-600 hover:text-indigo-700 rounded-lg text-sm font-semibold hover:bg-indigo-50 transition-all active:scale-95 group disabled:opacity-50 shadow-sm"
                      >
                         {downloading ? (
-                            <Loader2 className="h-5 w-5 animate-spin text-black" />
+                            <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
                         ) : (
-                            <FileText className="h-5 w-5 text-black group-hover:scale-110 transition-transform" />
+                            <FileText className="h-4 w-4 text-slate-400 group-hover:text-indigo-600 transition-colors" />
                         )}
-                        {downloading ? "Generating..." : "Export Record to PDF"}
+                        {downloading ? "Generando..." : "Exportar PDF"}
                      </button>
                 </div>
             </div>

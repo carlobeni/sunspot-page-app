@@ -3,62 +3,64 @@ import { Info, Server, Building2, Handshake, Cpu, Activity, ShieldCheck } from "
 
 export default function InfoPage() {
   return (
-    <div className="p-5 pt-24 lg:p-12 max-w-screen-2xl mx-auto min-h-screen bg-[#020617] text-slate-200 animate-in fade-in duration-700">
-      {/* Header Noir */}
-      <div className="mb-16 border-b border-slate-800 pb-12 flex flex-col md:flex-row md:items-end justify-between gap-10">
+    <div className="p-4 pt-20 lg:p-8 max-w-screen-2xl mx-auto min-h-screen bg-slate-50 text-slate-900 animate-in fade-in duration-700">
+      {/* Header */}
+      <div className="mb-6 border-b border-slate-200 pb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
-          <h1 className="text-4xl font-serif font-black text-white tracking-widest uppercase flex items-center gap-8">
-            <Info className="h-12 w-12 text-slate-600" />
-            Información
+          <h1 className="text-xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
+             <Info className="h-6 w-6 md:h-8 md:w-8 text-indigo-600" />
+             Información
           </h1>
-          <p className="text-slate-500 mt-6 text-xl font-light italic border-l-2 border-slate-800 pl-8 tracking-tight">
-            Arquitectura de hardware, <span className="text-white font-black underline underline-offset-8">instituciones académicas</span> y protocolos de desarrollo.
+          <p className="text-slate-500 mt-1.5 text-sm md:text-base font-medium max-w-xl hidden md:block">
+            Arquitectura de hardware, afiliaciones académicas y protocolos de desarrollo.
           </p>
         </div>
-        <div className="hidden lg:block">
-           <span className="text-[10px] font-black text-slate-700 uppercase tracking-[0.8em]">Documentation v4.6</span>
+        <div className="hidden md:block">
+           <span className="px-3 py-1 bg-white text-slate-600 rounded-md text-xs font-semibold border border-slate-200 shadow-sm">
+             Documentation v4.6
+           </span>
         </div>
       </div>
 
-      <div className="space-y-16">
-        {/* System Specifications Section Noir */}
-        <section className="bg-slate-900 rounded-2xl border border-slate-800 p-12 shadow-2xl relative overflow-hidden group hover:border-slate-600 transition-colors">
-          <div className="absolute top-0 right-0 p-12 opacity-[0.02] group-hover:opacity-[0.05] transition-opacity">
-            <Cpu className="h-40 w-40" />
+      <div className="space-y-8">
+        {/* System Specifications Section */}
+        <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 lg:p-10 relative overflow-hidden group hover:border-slate-300 transition-colors">
+          <div className="absolute top-0 right-0 p-8 opacity-[0.03] group-hover:opacity-[0.06] transition-opacity">
+             <Cpu className="h-24 w-24 text-slate-900" />
           </div>
-          <div className="flex items-center gap-4 pb-8 border-b border-slate-800 mb-10">
-            <Server className="h-8 w-8 text-white opacity-40" />
-            <h2 className="text-2xl font-serif font-black text-white uppercase tracking-[0.3em]">Especificaciones Técnicas</h2>
+          <div className="flex items-center gap-3 pb-6 border-b border-slate-200 mb-8">
+             <Server className="h-6 w-6 text-indigo-600" />
+             <h2 className="text-lg font-bold text-slate-900">Especificaciones Técnicas</h2>
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
-            <div className="bg-black p-8 rounded-xl border border-slate-800 transition-all hover:bg-white/5">
-              <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">Computación</h3>
-              <p className="text-xs text-white font-mono font-black italic">Raspberry Pi 5 // 8GB LPDDR4</p>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-slate-50 p-5 rounded-lg border border-slate-200 transition-all hover:bg-white hover:border-slate-300 hover:shadow-sm">
+               <h3 className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Computación</h3>
+               <p className="text-sm text-slate-900 font-mono font-medium">Raspberry Pi 5 / 8GB</p>
             </div>
-            <div className="bg-black p-8 rounded-xl border border-slate-800 transition-all hover:bg-white/5">
-              <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">Inferencia AI</h3>
-              <p className="text-xs text-white font-mono font-black italic">ONNX Runtime Accelerated</p>
+            <div className="bg-slate-50 p-5 rounded-lg border border-slate-200 transition-all hover:bg-white hover:border-slate-300 hover:shadow-sm">
+               <h3 className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Inferencia AI</h3>
+               <p className="text-sm text-slate-900 font-mono font-medium">ONNX Runtime</p>
             </div>
-            <div className="bg-black p-8 rounded-xl border border-slate-800 transition-all hover:bg-white/5">
-              <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">Build Target</h3>
-              <p className="text-xs text-white font-mono font-black italic">v4.6 Production Stable</p>
+            <div className="bg-slate-50 p-5 rounded-lg border border-slate-200 transition-all hover:bg-white hover:border-slate-300 hover:shadow-sm">
+               <h3 className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Build Target</h3>
+               <p className="text-sm text-slate-900 font-mono font-medium">v4.6 Production</p>
             </div>
-            <div className="bg-black p-8 rounded-xl border border-slate-800 transition-all hover:bg-white/5">
-              <h3 className="text-[9px] font-black text-slate-500 uppercase tracking-widest mb-3">Lead Architecture</h3>
-              <p className="text-xs text-white font-mono font-black uppercase tracking-tighter">Carlos Benítez // FIUNA</p>
+            <div className="bg-slate-50 p-5 rounded-lg border border-slate-200 transition-all hover:bg-white hover:border-slate-300 hover:shadow-sm">
+               <h3 className="text-xs font-bold text-slate-500 mb-2 uppercase tracking-wide">Arquitectura</h3>
+               <p className="text-sm text-slate-900 font-mono font-medium">Carlos Benítez - FIUNA</p>
             </div>
           </div>
         </section>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
-          {/* Institutions Section Noir */}
-          <section className="bg-slate-900 rounded-2xl border border-slate-800 p-12 shadow-2xl flex flex-col items-center">
-            <div className="flex items-center gap-4 pb-8 mb-12 self-stretch border-b border-slate-800">
-              <Building2 className="h-8 w-8 text-white opacity-40" />
-              <h2 className="text-2xl font-serif font-black text-white uppercase tracking-[0.3em]">Filiación</h2>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Institutions Section */}
+          <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 lg:p-10 flex flex-col items-center">
+            <div className="flex items-center gap-3 pb-6 border-b border-slate-200 mb-8 self-stretch">
+               <Building2 className="h-6 w-6 text-indigo-600" />
+               <h2 className="text-lg font-bold text-slate-900">Filiación</h2>
             </div>
-            <div className="flex items-center justify-center gap-12 w-full p-8 bg-black/40 border border-slate-800 shadow-inner">
-              <div className="relative h-28 w-40 grayscale hover:grayscale-0 contrast-125 transition-all duration-700">
+            <div className="flex items-center justify-center gap-8 w-full p-6 bg-slate-50 border border-slate-200 rounded-lg">
+              <div className="relative h-20 w-32 grayscale hover:grayscale-0 contrast-125 transition-all duration-700">
                 <Image 
                   src="/logos/fiuna.png" 
                   alt="Logo FIUNA" 
@@ -66,54 +68,54 @@ export default function InfoPage() {
                   className="object-contain"
                 />
               </div>
-              <div className="w-px h-16 bg-slate-800" />
-              <div className="relative h-28 w-40 grayscale hover:grayscale-0 contrast-125 transition-all duration-700">
+              <div className="w-px h-12 bg-slate-300" />
+              <div className="relative h-20 w-32 grayscale hover:grayscale-0 contrast-125 transition-all duration-700">
                 <Image 
                   src="/logos/fpuna.jpg" 
                   alt="Logo FPUNA" 
                   fill 
-                  className="object-contain mix-blend-screen"
+                  className="object-contain mix-blend-multiply"
                 />
               </div>
             </div>
           </section>
 
-          {/* Support Section Noir */}
-          <section className="bg-slate-900 rounded-2xl border border-slate-800 p-12 shadow-2xl flex flex-col items-center">
-            <div className="flex items-center gap-4 pb-8 mb-12 self-stretch border-b border-slate-800">
-              <ShieldCheck className="h-8 w-8 text-white opacity-40" />
-              <h2 className="text-2xl font-serif font-black text-white uppercase tracking-[0.3em]">Patrocinios</h2>
-            </div>
-            <div className="flex items-center justify-center gap-12 w-full p-8 bg-black/40 border border-slate-800 shadow-inner">
-              <div className="relative h-28 w-40 grayscale hover:grayscale-0 contrast-125 opacity-60 hover:opacity-100 transition-all duration-700">
-                <Image 
-                  src="/logos/becas.png" 
-                  alt="Logo Becas" 
-                  fill 
-                  className="object-contain"
-                />
-              </div>
-              <div className="w-px h-16 bg-slate-800" />
-              <div className="relative h-28 w-40 grayscale hover:grayscale-0 contrast-125 opacity-60 hover:opacity-100 transition-all duration-700">
-                <Image 
-                  src="/logos/pubiabm.jpg" 
-                  alt="Logo PUBIABM" 
-                  fill 
-                  className="object-contain mix-blend-screen"
-                />
-              </div>
-            </div>
+          {/* Support Section */}
+          <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 lg:p-10 flex flex-col items-center">
+             <div className="flex items-center gap-3 pb-6 border-b border-slate-200 mb-8 self-stretch">
+               <ShieldCheck className="h-6 w-6 text-emerald-600" />
+               <h2 className="text-lg font-bold text-slate-900">Patrocinios</h2>
+             </div>
+             <div className="flex items-center justify-center gap-8 w-full p-6 bg-slate-50 border border-slate-200 rounded-lg">
+               <div className="relative h-20 w-32 grayscale hover:grayscale-0 contrast-125 opacity-70 hover:opacity-100 transition-all duration-700">
+                  <Image 
+                    src="/logos/becas.png" 
+                    alt="Logo Becas" 
+                    fill 
+                    className="object-contain"
+                  />
+               </div>
+               <div className="w-px h-12 bg-slate-300" />
+               <div className="relative h-20 w-32 grayscale hover:grayscale-0 contrast-125 opacity-70 hover:opacity-100 transition-all duration-700">
+                  <Image 
+                    src="/logos/pubiabm.jpg" 
+                    alt="Logo PUBIABM" 
+                    fill 
+                    className="object-contain mix-blend-multiply"
+                  />
+               </div>
+             </div>
           </section>
         </div>
       </div>
       
       {/* Footer License */}
-      <div className="mt-24 pt-10 border-t border-slate-800 flex justify-between items-center text-[9px] font-black text-slate-600 uppercase tracking-[0.5em]">
+      <div className="mt-16 pt-8 border-t border-slate-200 flex flex-col sm:flex-row justify-between items-center text-xs font-semibold text-slate-600 gap-4">
         <span>© 2026 Solar Predictive Portal</span>
-        <div className="flex gap-10">
-          <span className="text-white opacity-20">FIUNA</span>
-          <span className="text-white opacity-20">FPUNA</span>
-          <span className="text-white opacity-20">ITAIPU</span>
+        <div className="flex gap-6">
+           <span className="text-slate-500">FIUNA</span>
+           <span className="text-slate-500">FPUNA</span>
+           <span className="text-slate-500">ITAIPU</span>
         </div>
       </div>
     </div>

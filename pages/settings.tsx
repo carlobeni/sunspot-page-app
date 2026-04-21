@@ -100,90 +100,90 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-5 pt-24 lg:p-12 max-w-screen-2xl mx-auto min-h-screen bg-[#020617] text-slate-200">
-      {/* Modals Overlay Noir */}
+    <div className="p-5 pt-24 lg:p-12 max-w-screen-2xl mx-auto min-h-screen bg-slate-50 text-slate-900">
+      {/* Modals Overlay */}
       {modalType && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md animate-in fade-in duration-300">
-          <div className="bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md border border-slate-800 overflow-hidden">
-            <div className="flex items-center justify-between px-8 py-6 border-b border-slate-800 bg-black">
-              <h3 className="text-xs font-black text-white uppercase tracking-[0.4em]">
-                {modalType === "add" && "NUEVO REGISTRO / ACCESS"}
-                {modalType === "edit" && "EDITAR PERFIL / CONFIG"}
-                {modalType === "pass" && "SINC SECURITY / CRYPTO"}
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-sm animate-in fade-in duration-300">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md border border-slate-200 overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-slate-50">
+              <h3 className="text-sm font-bold text-slate-900">
+                {modalType === "add" && "Nuevo Usuario"}
+                {modalType === "edit" && "Editar Usuario"}
+                {modalType === "pass" && "Actualizar Contraseña"}
               </h3>
               <button 
                 onClick={() => setModalType(null)} 
-                className="p-2 text-slate-500 hover:text-white transition-colors"
+                className="p-2 text-slate-500 hover:text-slate-900 transition-colors"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
             
-            <form onSubmit={handleModalSubmit} className="p-8 space-y-6">
+            <form onSubmit={handleModalSubmit} className="p-6 space-y-4">
               {(modalType === "add" || modalType === "edit") && (
                 <>
-                  <div className="space-y-2">
-                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Label Name</label>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-600">Nombre</label>
                     <input 
                       required 
                       type="text" 
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      className="block w-full rounded-xl border border-slate-800 bg-black py-4 px-4 text-white focus:border-white outline-none text-xs uppercase tracking-tighter" 
+                      className="block w-full rounded-md border border-slate-200 bg-white py-2.5 px-3 text-slate-900 focus:border-indigo-500 outline-none text-sm transition-colors shadow-sm" 
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Network ID / Email</label>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-600">Email</label>
                     <input 
                       required 
                       type="email" 
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="block w-full rounded-xl border border-slate-800 bg-black py-4 px-4 text-white focus:border-white outline-none text-xs" 
+                      className="block w-full rounded-md border border-slate-200 bg-white py-2.5 px-3 text-slate-900 focus:border-indigo-500 outline-none text-sm transition-colors shadow-sm" 
                     />
                   </div>
-                  <div className="space-y-2">
-                    <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Access Protocol</label>
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-semibold text-slate-600">Rol</label>
                     <select 
                       value={formData.role}
                       onChange={(e) => setFormData({...formData, role: e.target.value})}
-                      className="block w-full rounded-xl border border-slate-800 bg-black py-4 px-4 text-white focus:border-white outline-none text-xs uppercase tracking-widest"
+                      className="block w-full rounded-md border border-slate-200 bg-white py-2.5 px-3 text-slate-900 focus:border-indigo-500 outline-none text-sm transition-colors shadow-sm"
                     >
-                      <option value="Visualizador">Visualizador (Standard)</option>
-                      <option value="Administrador">Administrador (Root)</option>
+                      <option value="Visualizador">Visualizador</option>
+                      <option value="Administrador">Administrador</option>
                     </select>
                   </div>
                 </>
               )}
 
               {(modalType === "add" || modalType === "pass") && (
-                <div className="space-y-2">
-                  <label className="block text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Password Key</label>
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-semibold text-slate-600">Contraseña</label>
                   <input 
                     required 
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    className="block w-full rounded-xl border border-slate-800 bg-black py-4 px-4 text-white focus:border-white outline-none text-xs" 
+                    className="block w-full rounded-md border border-slate-200 bg-white py-2.5 px-3 text-slate-900 focus:border-indigo-500 outline-none text-sm transition-colors shadow-sm" 
                   />
                 </div>
               )}
 
-              <div className="pt-6 flex gap-4 justify-end border-t border-slate-800 mt-4">
+              <div className="pt-4 flex gap-3 justify-end border-t border-slate-200 mt-6">
                 <button 
                   type="button" 
                   onClick={() => setModalType(null)}
-                  className="px-6 py-3 text-[10px] font-black text-slate-500 hover:text-white uppercase tracking-widest transition-all"
+                  className="px-4 py-2 text-sm font-semibold text-slate-500 hover:text-slate-900 transition-colors"
                 >
-                  Cancel
+                  Cancelar
                 </button>
                 <button 
                   type="submit" 
                   disabled={isSubmitting}
-                  className="flex items-center justify-center gap-3 px-8 py-3 text-[10px] font-black text-black bg-white hover:bg-slate-200 transition-all rounded-xl disabled:opacity-50 uppercase tracking-[0.2em]"
+                  className="flex items-center justify-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-all rounded-md disabled:opacity-50 shadow-sm"
                 >
-                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
-                  {isSubmitting ? "Sincronizando..." : "Cometer"}
+                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  {isSubmitting ? "Guardando..." : "Guardar"}
                 </button>
               </div>
             </form>
@@ -191,33 +191,33 @@ export default function SettingsPage() {
         </div>
       )}
 
-      {/* Header Noir */}
-      <div className="mb-16 flex flex-col md:flex-row md:items-end justify-between gap-10 border-b border-slate-800 pb-12">
+      {/* Header */}
+      <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <h1 className="text-4xl font-serif font-black text-white tracking-widest uppercase flex items-center gap-8">
-            <SettingsIcon className="h-12 w-12 text-slate-600" />
-            Control
+          <h1 className="text-xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
+            <SettingsIcon className="h-6 w-6 md:h-8 md:w-8 text-indigo-600" />
+            Configuración
           </h1>
-          <p className="text-slate-500 mt-6 text-xl font-light italic border-l-2 border-slate-800 pl-8 tracking-tight">
-            Gestión de arquitecturas de red y <span className="text-white font-black underline underline-offset-8">permisos binarios</span>.
+          <p className="text-slate-500 mt-1.5 text-sm md:text-base font-medium max-w-xl hidden md:block">
+            Gestión de conectividad y acceso al sistema.
           </p>
         </div>
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="flex items-center justify-center gap-4 px-10 py-5 rounded-xl bg-white text-black font-black uppercase text-[10px] tracking-[0.3em] hover:bg-slate-200 transition-all shadow-[0_0_50px_rgba(255,255,255,0.05)] w-full md:w-auto active:scale-95"
+          className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition-all w-full md:w-auto shadow-sm"
         >
-          {isSaving ? <Loader2 className="h-5 w-5 animate-spin" /> : <Save className="h-5 w-5" />}
-          {isSaving ? "SYNCING..." : "COMMIT GLOBAL CHANGES"}
+          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          {isSaving ? "Guardando..." : "Guardar Cambios"}
         </button>
       </div>
 
-      <div className="flex flex-col lg:flex-row gap-12">
-        {/* Navigation Sidebar Noir */}
-        <div className="lg:w-80 flex-shrink-0 space-y-px bg-slate-900 border border-slate-800 rounded-2xl h-fit shadow-2xl overflow-hidden p-1">
+      <div className="flex flex-col lg:flex-row gap-8">
+        {/* Navigation Sidebar */}
+        <div className="lg:w-64 flex-shrink-0 flex flex-row lg:flex-col gap-1 overflow-x-auto pb-4 lg:pb-0 hide-scrollbar">
           {[
-            { id: "general", name: "Network Layer", icon: Network },
-            { id: "accounts", name: "Security Protocols", icon: Users },
+            { id: "general", name: "Red", icon: Network },
+            { id: "accounts", name: "Usuarios", icon: Users },
           ].map((tab) => {
             const Icon = tab.icon;
             return (
@@ -225,44 +225,37 @@ export default function SettingsPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "w-full flex items-center gap-4 px-8 py-6 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all",
+                  "flex items-center gap-3 px-4 py-3 rounded-md text-sm font-semibold transition-all whitespace-nowrap",
                   activeTab === tab.id
-                    ? "bg-slate-800 text-white border-l-4 border-white"
-                    : "text-slate-500 hover:bg-slate-800/40 hover:text-slate-200 border-l-4 border-transparent"
+                    ? "bg-indigo-50 text-indigo-700 shadow-sm border border-indigo-100"
+                    : "text-slate-600 hover:bg-white hover:text-slate-900 border border-transparent"
                 )}
               >
-                <Icon className={cn("h-4 w-4", activeTab === tab.id ? "text-white" : "text-slate-600")} />
+                <Icon className={cn("h-4 w-4", activeTab === tab.id ? "text-indigo-600" : "text-slate-400")} />
                 {tab.name}
               </button>
             );
           })}
         </div>
 
-        {/* Content Area Noir */}
+        {/* Content Area */}
         <div className="flex-1 min-w-0">
-          <div className="bg-slate-900 rounded-2xl border border-slate-800 shadow-[0_0_100px_rgba(0,0,0,0.5)] overflow-hidden">
+          <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
             
-            {/* Network Section Noir */}
+            {/* Network Section */}
             {activeTab === "general" && (
-               <div className="p-10 lg:p-16 space-y-12 animate-in fade-in duration-700">
-                <div className="flex items-center gap-4 pb-8 border-b border-slate-800">
-                  <Cpu className="h-8 w-8 text-white opacity-40" />
-                  <h2 className="text-2xl font-serif font-black text-white uppercase tracking-[0.3em]">Conectividad</h2>
+               <div className="p-6 lg:p-10 space-y-8 animate-in fade-in duration-500">
+                <div className="flex items-center gap-3 pb-4 border-b border-slate-200">
+                  <Cpu className="h-6 w-6 text-indigo-600" />
+                  <h2 className="text-lg font-bold text-slate-900">Red Inalámbrica (Hotspot)</h2>
                 </div>
                 
-                <div className="space-y-12">
-                  <p className="text-xs font-light text-slate-500 italic max-w-3xl leading-relaxed uppercase tracking-tighter">
-                    Administración de interfaces duales: Internal Hotspot (LAN) y External Uplink (WLAN). Sincronización continua de hardware Raspberry Pi 5.
-                  </p>
-
-                  <div className="bg-black border border-slate-800 rounded-xl p-10 relative group">
-                    <div className="absolute top-0 right-0 p-8 opacity-[0.02]">
-                        <Network className="h-32 w-32" />
-                    </div>
-                    <div className="flex items-start justify-between mb-8">
+                <div className="space-y-8">
+                  <div className="bg-slate-50 border border-slate-200 shadow-sm rounded-lg p-6">
+                    <div className="flex items-start justify-between mb-6">
                       <div>
-                        <h3 className="text-xs font-black text-white uppercase tracking-widest">Internal Hotspot [LAN_01]</h3>
-                        <p className="text-[10px] text-slate-500 mt-2 uppercase tracking-tight italic font-medium">Puerta de enlace administrativa para control remoto directo.</p>
+                        <h3 className="text-sm font-bold text-slate-900">Red RPi-5 (LAN interna)</h3>
+                        <p className="text-xs text-slate-500 mt-1">Red emitida por el dispositivo principal.</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input 
@@ -271,27 +264,27 @@ export default function SettingsPage() {
                           defaultChecked 
                           disabled={activeUserRole !== "Administrador"}
                         />
-                        <div className="w-12 h-6 bg-slate-800 rounded-xl peer peer-checked:after:bg-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-slate-600 after:rounded-xl after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-6 border border-slate-700 peer-checked:bg-white/10 peer-checked:border-white"></div>
+                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                       </label>
                     </div>
                     
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pt-8 border-t border-slate-800">
-                      <div className="space-y-2">
-                        <label className="block text-[9px] font-black text-slate-600 uppercase tracking-widest">SSID IDENTIFIER</label>
-                        <input type="text" defaultValue="Sunspot_LAN_01" disabled={activeUserRole !== "Administrador"} className="block w-full bg-slate-900 border border-slate-800 rounded-xl py-4 px-4 text-xs text-white font-mono uppercase focus:border-white outline-none" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-200">
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-semibold text-slate-600">Nombre (SSID)</label>
+                        <input type="text" defaultValue="Sunspot_LAN_01" disabled={activeUserRole !== "Administrador"} className="block w-full bg-white border border-slate-200 rounded-md py-2 px-3 text-sm text-slate-900 font-mono focus:border-indigo-500 outline-none transition-colors shadow-sm" />
                       </div>
-                      <div className="space-y-2">
-                        <label className="block text-[9px] font-black text-slate-600 uppercase tracking-widest">ENCRYPTION KEY</label>
-                        <input type="password" defaultValue="admin123" disabled={activeUserRole !== "Administrador"} className="block w-full bg-slate-900 border border-slate-800 rounded-xl py-4 px-4 text-xs text-white outline-none focus:border-white" />
+                      <div className="space-y-1.5">
+                        <label className="block text-xs font-semibold text-slate-600">Contraseña</label>
+                        <input type="password" defaultValue="admin123" disabled={activeUserRole !== "Administrador"} className="block w-full bg-white border border-slate-200 rounded-md py-2 px-3 text-sm text-slate-900 focus:border-indigo-500 outline-none transition-colors shadow-sm" />
                       </div>
                     </div>
                   </div>
 
-                  <div className="bg-black border border-slate-800 rounded-xl p-10 shadow-2xl">
-                    <div className="flex items-start justify-between mb-10">
+                  <div className="bg-slate-50 border border-slate-200 shadow-sm rounded-lg p-6">
+                    <div className="flex items-start justify-between mb-6">
                       <div>
-                        <h3 className="text-xs font-black text-white uppercase tracking-widest">External WLAN Uplink</h3>
-                        <p className="text-[10px] text-slate-500 mt-2 uppercase tracking-tight italic font-medium">Sincronización con infraestructuras de red institucionales.</p>
+                        <h3 className="text-sm font-bold text-slate-900">Red Externa (WLAN Uplink)</h3>
+                        <p className="text-xs text-slate-500 mt-1">Conexión a internet para sincronización con Supabase.</p>
                       </div>
                       <label className="relative inline-flex items-center cursor-pointer">
                         <input 
@@ -300,42 +293,42 @@ export default function SettingsPage() {
                           defaultChecked 
                           disabled={activeUserRole !== "Administrador"}
                         />
-                        <div className="w-12 h-6 bg-slate-800 rounded-xl peer peer-checked:after:bg-white after:content-[''] after:absolute after:top-[4px] after:left-[4px] after:bg-slate-600 after:rounded-xl after:h-4 after:w-4 after:transition-all peer-checked:after:translate-x-6 border border-slate-700 peer-checked:bg-white/10 peer-checked:border-white"></div>
+                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
                       </label>
                     </div>
 
                     <div>
-                      <h4 className="text-[9px] font-black text-slate-500 mb-6 flex items-center gap-3 uppercase tracking-widest">
-                        RF Signal Scan
-                        <Loader2 className="h-3 w-3 animate-spin text-white" />
+                      <h4 className="text-xs font-semibold text-slate-500 mb-3 flex items-center gap-2">
+                        Redes Disponibles
+                        <Loader2 className="h-3 w-3 animate-spin text-slate-500" />
                       </h4>
-                      <div className="border border-slate-800 rounded-xl divide-y divide-slate-800 overflow-hidden">
+                      <div className="border border-slate-200 shadow-sm rounded-md divide-y divide-slate-100 bg-white overflow-hidden">
                         {[
-                          { ssid: "FIUNA_Lab", signal: "Excelent", security: "WPA2", connected: true },
-                          { ssid: "FIUNA_Alumnos", signal: "Strong", security: "Open", connected: false },
-                          { ssid: "Sunspot_Research", signal: "Moderate", security: "WPA3", connected: false },
+                          { ssid: "FIUNA_Lab", signal: "Excelente", security: "WPA2", connected: true },
+                          { ssid: "FIUNA_Alumnos", signal: "Buena", security: "Abierta", connected: false },
+                          { ssid: "Sunspot_Research", signal: "Regular", security: "WPA3", connected: false },
                         ].map((net, i) => (
-                          <div key={i} className={cn("p-6 flex items-center justify-between transition-all", net.connected ? "bg-white/5" : "hover:bg-slate-800/40")}>
+                          <div key={i} className={cn("p-4 flex items-center justify-between", net.connected ? "bg-indigo-50/50" : "hover:bg-slate-50")}>
                             <div className="flex flex-col">
-                              <span className={cn("text-xs font-black uppercase tracking-widest", net.connected ? "text-white" : "text-slate-500")}>
+                              <span className={cn("text-sm font-bold", net.connected ? "text-indigo-700" : "text-slate-700")}>
                                 {net.ssid}
                               </span>
-                              <span className="text-[9px] text-slate-600 mt-1 flex gap-3 uppercase font-black tracking-tighter">
-                                <span>Signal: {net.signal}</span>
-                                <span className="opacity-30">//</span>
+                              <span className="text-xs text-slate-500 mt-0.5 flex items-center gap-2 font-medium">
+                                <span>Señal: {net.signal}</span>
+                                <span className="opacity-50">•</span>
                                 <span>{net.security}</span>
                               </span>
                             </div>
                             {net.connected ? (
-                              <span className="text-[9px] font-black text-white bg-slate-800 px-4 py-2 border border-white/20 uppercase tracking-widest shadow-[0_0_20px_rgba(255,255,255,0.05)]">
-                                Active Link
+                              <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 shadow-sm">
+                                Conectado
                               </span>
                             ) : (
                               <button 
                                 disabled={activeUserRole !== "Administrador"}
-                                className="text-[9px] font-black text-slate-600 bg-black border border-slate-800 px-6 py-2 hover:bg-white hover:text-black transition-all uppercase tracking-widest disabled:opacity-20"
+                                className="text-xs font-semibold text-slate-600 bg-white border border-slate-200 px-4 py-1.5 rounded hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
                               >
-                                Connect
+                                Conectar
                               </button>
                             )}
                           </div>
@@ -349,70 +342,80 @@ export default function SettingsPage() {
 
             {/* Access Section Noir */}
             {activeTab === "accounts" && (
-              <div className="p-0 animate-in fade-in duration-700">
-                <div className="p-10 lg:p-16 pb-8">
-                  <div className="flex items-center gap-4 pb-8 border-b border-slate-800">
-                    <Users className="h-8 w-8 text-white opacity-40" />
-                    <h2 className="text-2xl font-serif font-black text-white uppercase tracking-[0.3em]">Permisos</h2>
+              <div className="animate-in fade-in duration-500 bg-white">
+                <div className="p-6 lg:p-10 border-b border-slate-200 flex items-center justify-between">
+                  <div>
+                    <h2 className="text-lg font-bold text-slate-900">Perfiles de Acceso</h2>
+                    <p className="text-sm text-slate-500 mt-1 font-medium">Gestión de usuarios y niveles de permiso.</p>
                   </div>
-                  <p className="text-[10px] font-black text-slate-600 mt-6 uppercase tracking-widest italic">Root access required for credential modification.</p>
+                  {activeUserRole === "Administrador" && (
+                    <button 
+                      onClick={openAddUserModal}
+                      className="text-sm font-semibold bg-white border border-slate-200 shadow-sm hover:border-indigo-600 hover:text-indigo-700 text-slate-700 px-4 py-2 rounded-md transition-colors"
+                    >
+                      Añadir Usuario
+                    </button>
+                  )}
                 </div>
                 
                 <div className="overflow-x-auto">
-                  <table className="min-w-full divide-y divide-slate-800">
-                    <thead className="bg-black">
-                      <tr>
-                        <th scope="col" className="px-10 py-6 text-left text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Identity Identifier</th>
-                        <th scope="col" className="px-10 py-6 text-left text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Access Rank</th>
-                        <th scope="col" className="px-10 py-6 text-left text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Last Sync</th>
-                        <th scope="col" className="px-10 py-6 text-right text-[9px] font-black uppercase tracking-[0.2em] text-slate-500">Action Keys</th>
+                  <table className="w-full text-left">
+                    <thead>
+                      <tr className="bg-slate-50 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
+                        <th className="px-6 py-4">Usuario</th>
+                        <th className="px-6 py-4">Rol</th>
+                        <th className="px-6 py-4 hidden sm:table-cell">Último Acceso</th>
+                        <th className="px-6 py-4 text-right">Acciones</th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-slate-800 bg-slate-900">
+                    <tbody className="divide-y divide-slate-100 bg-white">
                       {users.map((user) => (
-                        <tr key={user.id} className="hover:bg-black/40 transition-all">
-                          <td className="whitespace-nowrap px-10 py-8">
-                            <div className="flex items-center">
-                              <div className="h-12 w-12 flex-shrink-0 rounded-xl bg-black border border-slate-800 flex items-center justify-center">
-                                <span className="text-xs font-black text-white font-serif tracking-widest">{user.name.charAt(0)}</span>
+                        <tr key={user.id} className="hover:bg-slate-50 transition-colors">
+                          <td className="px-6 py-4">
+                            <div className="flex items-center gap-3">
+                              <div className="h-10 w-10 rounded-full border border-slate-200 shadow-sm bg-indigo-50 flex items-center justify-center font-bold text-indigo-700">
+                                {user.name.charAt(0)}
                               </div>
-                              <div className="ml-6">
-                                <div className="text-xs font-black text-white uppercase tracking-widest">{user.name}</div>
-                                <div className="text-[10px] text-slate-500 mt-1">{user.email}</div>
+                              <div>
+                                <div className="text-sm font-bold text-slate-900">{user.name}</div>
+                                <div className="text-xs font-medium text-slate-500">{user.email}</div>
                               </div>
                             </div>
                           </td>
-                          <td className="whitespace-nowrap px-10 py-8">
+                          <td className="px-6 py-4">
                             <span className={cn(
-                              "inline-flex items-center rounded-xl px-4 py-2 text-[9px] font-black uppercase tracking-widest border",
+                              "inline-flex items-center rounded-md px-2.5 py-1 text-xs font-bold border shadow-sm",
                               user.role === "Administrador" 
-                                ? "bg-white text-black border-white" 
-                                : "bg-black text-slate-500 border-slate-800"
+                                ? "bg-indigo-50 text-indigo-700 border-indigo-200" 
+                                : "bg-white text-slate-600 border-slate-200"
                             )}>
                               {user.role}
                             </span>
                           </td>
-                          <td className="whitespace-nowrap px-10 py-8 text-[10px] font-mono text-slate-500 uppercase tracking-tighter">
+                          <td className="px-6 py-4 hidden sm:table-cell text-sm font-medium text-slate-500">
                             {user.lastLogin}
                           </td>
-                          <td className="whitespace-nowrap px-10 py-8 text-right font-medium">
+                          <td className="px-6 py-4 text-right">
                             {activeUserRole === "Administrador" && (
-                              <div className="flex justify-end gap-2">
+                              <div className="flex justify-end gap-1.5">
                                 <button 
                                   onClick={() => openEditUserModal(user)}
-                                  className="text-slate-100 hover:bg-white hover:text-black p-3 border border-slate-800 transition-all rounded-xl"
+                                  className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+                                  title="Editar info"
                                 >
                                   <Pencil className="h-4 w-4" />
                                 </button>
                                 <button 
                                   onClick={() => openPasswordModal(user.id)}
-                                  className="text-slate-100 hover:bg-white hover:text-black p-3 border border-slate-800 transition-all rounded-xl"
+                                  className="p-2 text-slate-400 hover:text-emerald-600 hover:bg-emerald-50 rounded-md transition-colors"
+                                  title="Cambiar contraseña"
                                 >
                                   <KeyRound className="h-4 w-4" />
                                 </button>
                                 <button 
                                   onClick={() => deleteUser(user.id)}
-                                  className="text-slate-500 hover:bg-white hover:text-black p-3 border border-slate-800 transition-all rounded-xl"
+                                  className="p-2 text-slate-400 hover:text-red-600 hover:bg-red-50 rounded-md transition-colors"
+                                  title="Eliminar usuario"
                                 >
                                   <Trash2 className="h-4 w-4" />
                                 </button>
@@ -423,17 +426,6 @@ export default function SettingsPage() {
                       ))}
                     </tbody>
                   </table>
-                  
-                  {activeUserRole === "Administrador" && (
-                    <div className="p-10 border-t border-slate-800 flex justify-end">
-                      <button 
-                        onClick={openAddUserModal}
-                        className="text-[10px] font-black text-slate-400 hover:text-white uppercase tracking-[0.4em] transition-all flex items-center gap-3 border border-dashed border-slate-800 px-8 py-4 hover:border-white"
-                      >
-                        + ADD NEW CREDENTIAL
-                      </button>
-                    </div>
-                  )}
                 </div>
               </div>
             )}

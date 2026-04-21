@@ -22,69 +22,69 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#020617] py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Decorative Noir Background Element */}
-      <div className="absolute bottom-0 left-0 p-32 opacity-[0.02] -rotate-12 -translate-x-32 translate-y-32">
-        <Globe className="h-[40rem] w-[40rem] text-white" />
+    <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* Decorative Background Element */}
+      <div className="absolute bottom-0 left-0 p-32 opacity-[0.05] -rotate-12 -translate-x-32 translate-y-32 pointer-events-none">
+        <Globe className="h-[40rem] w-[40rem] text-indigo-900" />
       </div>
 
-      <div className="max-w-md w-full space-y-12 bg-slate-900 p-12 rounded-2xl shadow-2xl border border-slate-800 relative z-10">
+      <div className="max-w-md w-full space-y-8 bg-white p-8 sm:p-10 rounded-xl shadow-lg border border-slate-200 relative z-10">
         <div className="flex flex-col items-center">
-          <div className="w-16 h-16 bg-black border border-slate-800 flex items-center justify-center mb-8">
-            <UserPlus className="h-8 w-8 text-white" strokeWidth={1} />
+          <div className="w-12 h-12 bg-indigo-50 border border-indigo-100 shadow-sm rounded-lg flex items-center justify-center mb-6">
+            <UserPlus className="h-6 w-6 text-indigo-600" strokeWidth={1.5} />
           </div>
-          <h2 className="text-center text-3xl font-serif font-black tracking-widest text-white uppercase">
+          <h2 className="text-center text-2xl font-bold text-slate-900">
             Registro
           </h2>
-          <p className="mt-4 text-center text-[10px] font-black text-slate-500 uppercase tracking-[0.4em] italic leading-relaxed">
-            Solicitud de Acceso al Nodo Central
+          <p className="mt-2 text-center text-sm font-semibold text-slate-500">
+            Solicitud de acceso al nodo central
           </p>
         </div>
 
-        <form className="mt-10 space-y-8" onSubmit={handleRegister}>
-          <div className="space-y-6">
-            <div className="space-y-2">
-              <label htmlFor="name" className="block text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Full Identity Name</label>
+        <form className="mt-8 space-y-6" onSubmit={handleRegister}>
+          <div className="space-y-4">
+            <div className="space-y-1.5">
+              <label htmlFor="name" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Nombre Completo</label>
               <input
                 id="name"
                 name="name"
                 type="text"
                 required
-                className="block w-full rounded-xl border border-slate-800 bg-black py-4 px-4 text-white focus:border-white outline-none text-xs transition-all"
-                placeholder="CARLOS BENITEZ"
+                className="block w-full rounded-md border border-slate-200 bg-white py-2.5 px-3 text-slate-900 focus:border-indigo-500 outline-none text-sm transition-colors shadow-sm font-medium"
+                placeholder="Carlos Benítez"
                 disabled={isLoading || isPending}
               />
             </div>
-            <div className="space-y-2">
-              <label htmlFor="email-address" className="block text-[9px] font-black text-slate-500 uppercase tracking-widest ml-1">Academic Email</label>
+            <div className="space-y-1.5">
+              <label htmlFor="email-address" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Correo Electrónico Institucional</label>
               <input
                 id="email-address"
                 name="email"
                 type="email"
                 required
-                className="block w-full rounded-xl border border-slate-800 bg-black py-4 px-4 text-white focus:border-white outline-none text-xs transition-all"
-                placeholder="USER@FIUNA.EDU.PY"
+                className="block w-full rounded-md border border-slate-200 bg-white py-2.5 px-3 text-slate-900 focus:border-indigo-500 outline-none text-sm transition-colors shadow-sm font-medium"
+                placeholder="usuario@fiuna.edu.py"
                 disabled={isLoading || isPending}
               />
             </div>
           </div>
 
-          <div className="bg-black/60 p-6 border border-slate-800">
-             <p className="text-[9px] text-slate-600 font-light italic leading-loose uppercase tracking-tighter">
+          <div className="bg-amber-50 p-4 border border-amber-200 rounded-md shadow-sm">
+             <p className="text-xs text-amber-800 leading-relaxed font-medium">
                Nota: Todas las solicitudes de registro deben ser validadas por el administrador del sistema antes de autorizar el acceso a la telemetría.
              </p>
           </div>
 
-          <div className="pt-4">
+          <div className="pt-2">
             <button
               type="submit"
               disabled={isLoading || isPending}
-              className="group relative flex w-full justify-center items-center gap-4 rounded-xl bg-white px-6 py-5 text-[10px] font-black uppercase tracking-[0.5em] text-black hover:bg-slate-200 focus-visible:outline-none shadow-2xl disabled:opacity-30 transition-all active:scale-95"
+              className="group relative flex w-full justify-center items-center gap-2 rounded-md bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-700 focus-visible:outline-none disabled:opacity-50 transition-all shadow-md hover:shadow-lg"
             >
               {(isLoading || isPending) ? (
                 <>
-                  <Loader2 className="h-5 w-5 animate-spin" />
-                  Procesando Nodo...
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  Procesando...
                 </>
               ) : (
                 <>
@@ -95,10 +95,10 @@ export default function RegisterPage() {
             </button>
           </div>
 
-          <div className="text-center pt-8 border-t border-slate-800">
-             <span className="text-[9px] font-black text-slate-600 uppercase tracking-widest">Ya registrado //</span>
-             <Link href="/login" className="ml-3 text-[9px] font-black text-white hover:underline uppercase tracking-widest">
-               Volver al Login
+          <div className="text-center pt-6 border-t border-slate-200">
+             <span className="text-sm font-semibold text-slate-500">¿Ya tienes cuenta?</span>
+             <Link href="/login" className="ml-2 text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors">
+               Iniciar sesión
              </Link>
           </div>
         </form>
