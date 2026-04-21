@@ -8,7 +8,8 @@ import {
 import { Info, TrendingUp, Zap, Clock, Map as MapIcon, ChevronDown } from "lucide-react";
 
 // Shared tick formatter yearFloat → "YYYY-MM"
-const yf2m = (v: number) => {
+const yf2m = (v: any) => {
+  if (typeof v !== 'number') return String(v || '');
   const yr = Math.floor(v);
   const mo = Math.round((v - yr) * 12) + 1;
   return `${yr}-${String(Math.min(mo, 12)).padStart(2, "0")}`;
@@ -244,7 +245,7 @@ export default function TrendsPage() {
                 <Tooltip
                   cursor={{ strokeDasharray: "3 3" }}
                   contentStyle={{ backgroundColor: "#0f172a", border: "1px solid #1e293b", color: "#fff" }}
-                  formatter={(v: any, n: string) => [typeof v === "number" ? v.toFixed(2) : v, n]}
+                  formatter={(v: any, n: any) => [typeof v === "number" ? v.toFixed(2) : v, n]}
                   labelFormatter={yf2m}
                 />
                 <Legend verticalAlign="top" height={36} iconType="circle"
