@@ -4,91 +4,111 @@ import Link from "next/link";
 import { useRouter } from "next/router";
 import { View, Loader2, ShieldCheck, Globe } from "lucide-react";
 import { useState, useTransition } from "react";
+import { supabase } from "@/lib/supabase";
 
 export default function LoginPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
+    setError(null);
     
-    setTimeout(() => {
-      startTransition(() => {
-        router.push("/observatory");
-      });
-    }, 600);
+    const formData = new FormData(e.currentTarget);
+    const email = formData.get("email") as string;
+    const password = formData.get("password") as string;
+
+    const { error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error) {
+      setError(error.message);
+      setIsLoading(false);
+      return;
+    }
+
+    startTransition(() => {
+      router.push("/observatory");
+    });
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-      {/* Decorative Background Element */}
-      <div className="absolute top-0 right-0 p-32 opacity-[0.05] rotate-45 translate-x-32 -translate-y-32 pointer-events-none">
-        <Globe className="h-[40rem] w-[40rem] text-indigo-900" />
+      {/* Decorative Background Mesh */}
+      <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden opacity-40">
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-indigo-200/30 blur-[120px] rounded-full" />
+        <div className="absolute top-[60%] -right-[10%] w-[40%] h-[40%] bg-slate-200/50 blur-[120px] rounded-full" />
       </div>
 
-      <div className="max-w-md w-full space-y-8 bg-white p-8 sm:p-10 rounded-xl shadow-lg border border-slate-200 relative z-10">
+      <div className="max-w-md w-full space-y-8 bg-white/95 backdrop-blur-md p-8 sm:p-10 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.02),0_1px_8px_rgb(0,0,0,0.01)] border border-slate-100/50 relative z-10">
         <div className="flex flex-col items-center">
-          <div className="w-12 h-12 bg-indigo-50 border border-indigo-100 rounded-lg flex items-center justify-center mb-6 shadow-sm">
-            <View className="h-6 w-6 text-indigo-600" strokeWidth={1.5} />
+          <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center mb-6 shadow-sm transition-transform hover:scale-105 duration-300">
+            <View className="h-7 w-7 text-indigo-600" strokeWidth={1.5} />
           </div>
-          <h2 className="text-center text-2xl font-bold text-slate-900">
-            Iniciar Sesión
+          <h2 className="text-center text-3xl font-extrabold text-slate-900 tracking-tight">
+            Ingresar
           </h2>
-          <p className="mt-2 text-center text-sm font-semibold text-slate-500">
+          <p className="mt-2.5 text-center text-sm font-medium text-slate-600">
             Portal de Inteligencia Sunspot - FIUNA
           </p>
         </div>
 
-        <form className="mt-8 space-y-6" onSubmit={handleLogin}>
-          <div className="space-y-4">
-            <div className="space-y-1.5">
-              <label htmlFor="email-address" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Correo Electrónico</label>
+        <form className="mt-10 space-y-6" onSubmit={handleLogin}>
+          {error && (
+            <div className="bg-red-100 border border-red-300 text-black px-4 py-3 rounded-lg text-sm font-bold animate-in fade-in slide-in-from-top-2 duration-400">
+              {error}
+            </div>
+          )}
+          <div className="space-y-5">
+            <div className="space-y-2">
+              <label htmlFor="email-address" className="block text-xs font-bold text-slate-600 uppercase tracking-widest pl-1">Correo Electrónico</label>
               <input
                 id="email-address"
                 name="email"
                 type="email"
                 autoComplete="email"
                 required
-                defaultValue="carlosbenitez@fiuna.edu.py"
-                className="block w-full rounded-md border border-slate-200 bg-white py-2.5 px-3 text-slate-900 focus:border-indigo-500 outline-none text-sm transition-colors shadow-sm font-medium"
-                placeholder="usuario@fiuna.edu.py"
+                className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none text-sm transition-all shadow-sm font-medium"
+                placeholder="usuario@dominio.com"
                 disabled={isLoading || isPending}
               />
             </div>
-            <div className="space-y-1.5">
-              <label htmlFor="password" className="block text-xs font-bold text-slate-500 uppercase tracking-wide">Contraseña</label>
+            <div className="space-y-2">
+              <label htmlFor="password" className="block text-xs font-bold text-slate-600 uppercase tracking-widest pl-1">Contraseña</label>
               <input
                 id="password"
                 name="password"
                 type="password"
                 autoComplete="current-password"
                 required
-                defaultValue="password123"
-                className="block w-full rounded-md border border-slate-200 bg-white py-2.5 px-3 text-slate-900 focus:border-indigo-500 outline-none text-sm transition-colors shadow-sm font-medium"
+                className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none text-sm transition-all shadow-sm font-medium"
                 placeholder="••••••••"
                 disabled={isLoading || isPending}
               />
             </div>
           </div>
 
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between px-1">
             <div className="flex items-center">
               <input
                 id="remember-me"
                 name="remember-me"
                 type="checkbox"
-                className="h-4 w-4 rounded border-slate-300 bg-white text-indigo-600 focus:ring-indigo-500"
+                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
                 disabled={isLoading || isPending}
               />
-              <label htmlFor="remember-me" className="ml-2 block text-sm font-semibold text-slate-600">
+              <label htmlFor="remember-me" className="ml-2.5 block text-sm font-medium text-slate-700 cursor-pointer hover:text-slate-900 transition-colors">
                 Recordarme
               </label>
             </div>
 
             <div className="text-sm">
-              <Link href="/recover" className="font-bold text-indigo-600 hover:text-indigo-800 transition-colors">
+              <Link href="/recover" className="font-bold text-indigo-800 hover:text-indigo-950 transition-colors">
                 ¿Olvidaste tu contraseña?
               </Link>
             </div>
@@ -98,25 +118,25 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading || isPending}
-              className="group relative flex w-full justify-center items-center gap-2 rounded-md bg-indigo-600 px-4 py-3 text-sm font-bold text-white hover:bg-indigo-700 focus-visible:outline-none disabled:opacity-50 transition-all shadow-md hover:shadow-lg"
+              className="group relative flex w-full justify-center items-center gap-2.5 rounded-xl bg-indigo-600 px-4 py-3.5 text-sm font-bold text-white hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500/20 disabled:opacity-50 transition-all shadow-md hover:shadow-xl active:scale-[0.98]"
             >
               {(isLoading || isPending) ? (
                 <>
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  Conectando...
+                  <div className="h-4 w-4 border-2 border-slate-200 border-t-white rounded-sm animate-spin" />
+                  Verificando...
                 </>
               ) : (
                 <>
-                  <ShieldCheck className="h-5 w-5" />
-                  Ingresar al sistema
+                  <View className="h-5 w-5" />
+                  Ingresar
                 </>
               )}
             </button>
           </div>
 
-          <div className="text-center pt-6 border-t border-slate-200">
-             <span className="text-sm font-semibold text-slate-500">¿No tienes cuenta?</span>
-             <Link href="/register" className="ml-2 text-sm font-bold text-indigo-600 hover:text-indigo-800 transition-colors">
+          <div className="text-center pt-8 border-t border-slate-100">
+             <span className="text-sm font-medium text-slate-700">¿No tienes cuenta?</span>
+             <Link href="/register" className="ml-2 text-sm font-bold text-indigo-800 hover:text-indigo-950 transition-colors border-b border-indigo-800/30 hover:border-indigo-800">
                Regístrate
              </Link>
           </div>

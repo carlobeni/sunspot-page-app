@@ -19,8 +19,11 @@ const navItems = [
   { name: "Información", href: "/info", icon: Info },
 ];
 
+import { AuthProvider, useAuth } from "@/lib/AuthContext";
+
 export function Sidebar() {
   const router = useRouter();
+  const { user, signOut } = useAuth();
   const pathname = router.pathname;
   const [isOpen, setIsOpen] = useState(false);
 
@@ -28,10 +31,14 @@ export function Sidebar() {
     return null;
   }
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
     setIsOpen(false);
-    router.push("/login");
+    await signOut();
   };
+
+  const userEmail = user?.email || "usuario@fiuna.edu.py";
+  const userName = user?.user_metadata?.full_name || userEmail.split('@')[0];
+  const userInitials = userName.substring(0, 2).toUpperCase();
 
   return (
     <>
@@ -95,11 +102,11 @@ export function Sidebar() {
         <div className="p-6 border-t border-slate-200">
           <div className="flex items-center gap-3 bg-slate-50 p-4 mb-4 rounded-lg mx-2 border border-slate-100">
             <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center border border-slate-200 flex-shrink-0 shadow-sm">
-              <span className="text-sm font-bold text-indigo-700">CB</span>
+              <span className="text-sm font-bold text-indigo-700">{userInitials}</span>
             </div>
             <div className="flex flex-col min-w-0">
-              <span className="text-sm font-semibold text-slate-900 truncate">Carlos Benítez</span>
-              <span className="text-xs text-slate-500 truncate">carlos@fiuna.edu.py</span>
+              <span className="text-sm font-semibold text-slate-900 truncate capitalize">{userName}</span>
+              <span className="text-xs text-slate-500 truncate">{userEmail}</span>
             </div>
           </div>
           <button 

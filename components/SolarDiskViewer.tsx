@@ -113,9 +113,9 @@ export default function SolarDiskViewer({
             className="flex justify-center bg-slate-50 rounded-xl overflow-hidden p-4 relative min-h-[400px] lg:h-[600px] border border-slate-200 shadow-inner"
             onMouseMove={handleMouseMove}
           >
-             {(!imgLoaded || loading) && (
+              {(!imgLoaded || loading) && (
                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-50/80 backdrop-blur-sm">
-                 <Loader2 className="h-10 w-10 text-indigo-600 animate-spin mb-4" />
+                 <div className="w-10 h-10 border-4 border-slate-200 border-t-indigo-600 rounded-xl shadow-sm animate-spin mb-4" />
                  <div className="bg-white px-4 py-2 border border-slate-200 rounded-lg shadow-sm">
                     <p className="text-xs text-indigo-600 font-bold animate-pulse uppercase tracking-widest">
                       {loading ? "Sincronizando..." : "Renderizando..."}

@@ -182,7 +182,7 @@ export default function SettingsPage() {
                   disabled={isSubmitting}
                   className="flex items-center justify-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-all rounded-md disabled:opacity-50 shadow-sm"
                 >
-                  {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+                  {isSubmitting ? <div className="h-4 w-4 border-2 border-slate-200 border-t-white rounded-sm animate-spin" /> : <Save className="h-4 w-4" />}
                   {isSubmitting ? "Guardando..." : "Guardar"}
                 </button>
               </div>
@@ -207,7 +207,7 @@ export default function SettingsPage() {
           disabled={isSaving}
           className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition-all w-full md:w-auto shadow-sm"
         >
-          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
+          {isSaving ? <div className="h-4 w-4 border-2 border-slate-200 border-t-white rounded-sm animate-spin" /> : <Save className="h-4 w-4" />}
           {isSaving ? "Guardando..." : "Guardar Cambios"}
         </button>
       </div>
@@ -300,7 +300,7 @@ export default function SettingsPage() {
                     <div>
                       <h4 className="text-xs font-semibold text-slate-500 mb-3 flex items-center gap-2">
                         Redes Disponibles
-                        <Loader2 className="h-3 w-3 animate-spin text-slate-500" />
+                        <div className="h-3 w-3 border-2 border-slate-200 border-t-slate-500 rounded-sm animate-spin" />
                       </h4>
                       <div className="border border-slate-200 shadow-sm rounded-md divide-y divide-slate-100 bg-white overflow-hidden">
                         {[

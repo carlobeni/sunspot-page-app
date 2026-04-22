@@ -167,10 +167,12 @@ export default function RecordsPage() {
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen bg-slate-50">
-        <div className="flex flex-col items-center gap-4">
-            <div className="w-10 h-10 border-4 border-slate-200 border-t-indigo-600 rounded-full animate-spin" />
-            <span className="text-slate-600 font-medium text-sm animate-pulse">Cargando Registros...</span>
-        </div>
+      <div className="flex flex-col items-center gap-6">
+        <div className="w-16 h-16 border-4 border-slate-200 border-t-indigo-600 rounded-xl shadow-sm animate-spin" />
+        <span className="text-slate-500 font-bold tracking-widest animate-pulse uppercase">
+          Cargando Registros…
+        </span>
+      </div>
     </div>
   );
 
@@ -225,48 +227,27 @@ export default function RecordsPage() {
                             disabled={!d.hasRecord}
                             onClick={() => setSelectedDate(d.dateStr)}
                             className={cn(
-                                "aspect-square flex flex-col items-center justify-center text-sm rounded-md transition-all relative border border-transparent font-medium",
+                                "aspect-square flex flex-col items-center justify-center text-sm transition-all relative font-bold h-9 w-9 mx-auto rounded-full",
                                 d.hasRecord 
                                     ? isSelected
-                                        ? "bg-indigo-600 text-white font-bold shadow-md"
-                                        : "bg-slate-50 text-slate-700 hover:bg-slate-100 hover:text-indigo-600"
-                                    : "text-slate-400 cursor-not-allowed opacity-50"
+                                        ? "bg-slate-900 text-white shadow-lg scale-110"
+                                        : "text-slate-700 hover:bg-slate-100"
+                                    : "text-slate-300 pointer-events-none"
                             )}
                         >
-                            {d.day}
+                            <span className="relative z-10">{d.day}</span>
+                            {d.hasRecord && !isSelected && (
+                                <span className="absolute bottom-1 w-1 h-1 bg-indigo-500 rounded-full" />
+                            )}
                         </button>
                     );
                 })}
             </div>
             
-            <div className="pt-6 border-t border-slate-100 mt-auto">
-                <div className="flex items-center gap-3 mb-3">
-                    <div className="h-3 w-3 bg-indigo-50 border border-indigo-200 rounded-sm" />
-                    <span className="text-xs text-slate-500 font-semibold">Registros Disponibles</span>
-                </div>
-                <p className="text-xs text-slate-600 leading-relaxed bg-slate-50 p-3 rounded-lg border border-slate-100">
-                    La base de datos contiene {data?.availableDates?.length || 0} registros validados desde 2010.
-                </p>
-            </div>
+
           </div>
 
-          {/* Database Info */}
-          <div className="bg-white p-6 rounded-xl border border-slate-200 shadow-sm relative overflow-hidden group">
-             <h3 className="text-sm font-bold text-slate-900 mb-4 relative z-10">Integridad de DB</h3>
-             <div className="space-y-4 relative z-10">
-                <div className="flex justify-between items-center text-xs font-bold">
-                    <span className="text-slate-500">Status</span>
-                    <span className="text-emerald-700">100% Válido</span>
-                </div>
-                <div className="w-full bg-slate-100 h-1.5 rounded-full overflow-hidden">
-                    <div className="bg-emerald-500 h-full w-full" />
-                </div>
-                <div className="flex items-center gap-2 bg-emerald-50 text-emerald-800 text-xs font-semibold p-3 rounded-lg border border-emerald-100">
-                    <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                    Conexión Segura
-                </div>
-             </div>
-          </div>
+
         </div>
 
         {/* Viewer Column */}
@@ -285,7 +266,7 @@ export default function RecordsPage() {
                         className="flex items-center gap-2 px-4 py-2 bg-white text-slate-700 border border-slate-200 hover:border-indigo-600 hover:text-indigo-700 rounded-lg text-sm font-semibold hover:bg-indigo-50 transition-all active:scale-95 group disabled:opacity-50 shadow-sm"
                      >
                         {downloading ? (
-                            <Loader2 className="h-4 w-4 animate-spin text-slate-400" />
+                            <div className="h-4 w-4 border-2 border-slate-200 border-t-indigo-600 rounded-sm animate-spin" />
                         ) : (
                             <FileText className="h-4 w-4 text-slate-400 group-hover:text-indigo-600 transition-colors" />
                         )}

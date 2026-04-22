@@ -81,7 +81,7 @@ export default function ObservatoryPage() {
                   onClick={simulateDetection}
                   className="px-6 py-2.5 bg-indigo-600 text-white hover:bg-indigo-700 rounded-lg text-sm font-semibold flex items-center gap-2 transition-all w-full md:w-auto justify-center shadow-sm"
                 >
-                    {loading ? <Loader2 className="h-4 w-4 animate-spin"/> : <Activity className="h-4 w-4"/>}
+                    {loading ? <div className="h-4 w-4 border-2 border-slate-200 border-t-white rounded-sm animate-spin"/> : <Activity className="h-4 w-4"/>}
                     Re-ejecutar modelo
                 </button>
             </div>
@@ -266,7 +266,7 @@ function ImageTab({ metadata, setMetadata, image, setImage, simulateDetection }:
                       <div className="w-[70%] h-[70%] border-2 border-white rounded-lg border-dashed" />
                       <div className="absolute w-[90%] h-[90%] border-2 border-white rounded-full border-dashed" />
                   </div>
-                  <Loader2 className="h-10 w-10 text-slate-400 animate-spin" />
+                  <div className="h-10 w-10 border-4 border-slate-800 border-t-indigo-500 rounded-xl animate-spin" />
                   
                   {/* Camera Controls Overlay */}
                   <div className="absolute bottom-4 left-4 right-4 lg:bottom-6 lg:left-6 lg:right-6 flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white/95 backdrop-blur p-4 lg:p-6 rounded-lg border border-slate-200 shadow-md">

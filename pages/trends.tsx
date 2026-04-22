@@ -5,7 +5,7 @@ import {
   Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
   ScatterChart, Scatter, ZAxis, Line, Brush, Legend, ComposedChart, ReferenceLine,
 } from "recharts";
-import { Info, TrendingUp, Zap, Clock, Map as MapIcon, ChevronDown } from "lucide-react";
+import { Info, TrendingUp, Zap, Map as MapIcon } from "lucide-react";
 
 // Shared tick formatter yearFloat → "YYYY-MM"
 const yf2m = (v: any) => {
@@ -23,7 +23,7 @@ function ChartSkeleton({ height = 400, text = "Calculando…" }: { height?: numb
       className="w-full rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center animate-pulse shadow-sm"
     >
       <div className="flex flex-col items-center gap-3 opacity-60">
-        <div className="w-8 h-8 border-2 border-slate-200 border-t-indigo-500 rounded-full animate-spin" />
+        <div className="w-8 h-8 border-2 border-slate-200 border-t-indigo-500 rounded-xl animate-spin" />
         <span className="text-sm text-slate-500 font-bold">{text}</span>
       </div>
     </div>
@@ -133,25 +133,20 @@ export default function TrendsPage() {
       {/* Header */}
       <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
-          <div className="flex items-center gap-2 mb-2">
-            <span className="px-3 py-1 bg-white text-slate-600 rounded-md text-[10px] md:text-xs font-bold border border-slate-200 shadow-sm uppercase tracking-wider">
-              Hathaway Model v1.0
-            </span>
-          </div>
-          <h1 className="text-xl md:text-3xl font-bold text-slate-900 hidden md:block">Pronóstico Temporal</h1>
+          <h1 className="text-xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
+             <TrendingUp className="h-6 w-6 md:h-8 md:w-8 text-indigo-600" />
+             Tendencia
+          </h1>
         </div>
       </div>
 
       {/* Simplified Prediction Horizon Control */}
       <div className="mb-8 flex flex-col sm:flex-row items-center justify-between border-b border-slate-200 pb-4 gap-4">
-        <h2 className="text-base md:text-lg font-bold text-slate-800 uppercase tracking-tight">
-           Proyección Ciclo 25
-        </h2>
+        <div />
         
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <div className="relative group flex-1 sm:flex-none">
             <div className="flex items-center gap-2 bg-white border border-slate-200 hover:border-indigo-300 transition-all rounded-lg px-4 py-2 w-full shadow-sm">
-              <Clock className="w-4 h-4 text-indigo-500 pointer-events-none" />
               <div className="flex flex-col relative flex-1">
                 <select
                   value={forecastHorizon}
@@ -164,7 +159,6 @@ export default function TrendsPage() {
                   <option value={120} className="bg-white">Próxima Década</option>
                 </select>
               </div>
-              <ChevronDown className="w-4 h-4 text-slate-400 pointer-events-none absolute right-3" />
             </div>
           </div>
           
@@ -209,7 +203,6 @@ export default function TrendsPage() {
                   <ReferenceLine x={predictions[monthIdx].yearFloat} stroke="#4f46e5" strokeWidth={2} strokeDasharray="4 4"
                     label={{ value: predictions[monthIdx].month, position: "top", fill: "#4f46e5", fontSize: 10, fontWeight: "bold" }} />
                 )}
-                <Brush dataKey="yearFloat" height={24} stroke="#e2e8f0" fill="#f8fafc" tickFormatter={yf2m} />
               </ComposedChart>
             </div>
           </div>
