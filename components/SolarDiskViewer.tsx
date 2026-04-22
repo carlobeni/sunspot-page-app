@@ -189,12 +189,12 @@ export default function SolarDiskViewer({
                             y={-h / 2}
                             width={w}
                             height={h}
-                            stroke={isHovered ? "#fff" : "#cbd5e1"} 
-                            fill={isHovered ? "rgba(255, 255, 255, 0.2)" : "transparent"}
+                            stroke={isHovered ? "#22c55e" : "#16a34a"} 
+                            fill={isHovered ? "rgba(34, 197, 94, 0.2)" : "transparent"}
                             strokeWidth={isHovered ? 6 : 4}
                             className="transition-all duration-300"
                         />
-                        <circle r="6" fill="#fff" className={isHovered ? "animate-pulse" : ""} />
+                        <circle r="6" fill="#22c55e" className={isHovered ? "animate-pulse" : ""} />
                         <text
                             x={w / 2 + 10}
                             y={10}

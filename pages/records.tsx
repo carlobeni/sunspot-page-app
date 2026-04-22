@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { 
   Calendar as CalendarIcon, 
   Loader2, 
@@ -23,12 +23,16 @@ import {
   X, 
   LogOut, 
   Info, 
-  Calendar 
+  Calendar,
+  AlertCircle,
+  Save,
+  User,
+  Briefcase,
+  MapPin
 } from "lucide-react";
 import SolarDiskViewer from "../components/SolarDiskViewer";
-import jsPDF from "jspdf";
-
-// Re-defining cn for this file as well
+import html2canvas from "html2canvas";
+import { jsPDF } from "jspdf";
 function cn(...inputs: any[]) {
     return inputs.filter(Boolean).join(' ');
 }
@@ -37,9 +41,10 @@ export default function RecordsPage() {
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [data, setData] = useState<any>(null);
+  const [selectedSolarData, setSelectedSolarData] = useState<any>(null);
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [viewDate, setViewDate] = useState(new Date()); 
-
+  const reportRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const fetchDates = async () => {
       try {
@@ -116,54 +121,79 @@ export default function RecordsPage() {
         const res = await fetch(`/api/solar-disk?date=${selectedDate}`);
         if (!res.ok) throw new Error("Could not fetch data for PDF");
         const solarData = await res.json();
-
-        const doc = new jsPDF();
-        doc.setFont("helvetica", "bold");
-        doc.setFontSize(22);
-        doc.text("INFORME DE OBSERVACION SOLAR", 20, 30);
-        doc.setFontSize(10);
-        doc.text(`HASH ID: REF-${selectedDate.replace(/-/g, '')}-S3`, 20, 40);
-        doc.line(20, 45, 190, 45);
         
-        doc.setFontSize(12);
-        doc.text(`Fecha: ${selectedDate}`, 20, 60);
-        doc.text(`Institucion: FIUNA - Observatorio Alexis Troche Boggino`, 20, 68);
+        // Update state so the hidden template renders with this data
+        setSelectedSolarData(solarData);
         
-        doc.setFontSize(14);
-        doc.text("RESUMEN DE RESULTADOS", 20, 90);
-        doc.setFontSize(10);
-        doc.text(`- Unidades detectadas: ${solarData.crops?.length || 0}`, 20, 100);
-        doc.text(`- Fidelidad Imagen: ${solarData.fullDiskMetadata?.width}x${solarData.fullDiskMetadata?.height} px`, 20, 107);
+        // Use a temporary container for the report
+        const reportContainer = document.getElementById("hidden-report-container");
+        if (!reportContainer) throw new Error("Report container not found");
+        
+        // Wait for images to load if any
+        await new Promise(r => setTimeout(r, 1000));
 
-        if (solarData.crops?.length > 0) {
-            doc.text("DESGLOSE TEORICO", 20, 125);
-            let y = 135;
-            doc.setFontSize(8);
-            doc.text("REF", 20, y);
-            doc.text("LAT", 40, y);
-            doc.text("LON", 70, y);
-            doc.text("TYPE (McIntosh)", 100, y);
-            doc.text("MAG. CONFIG", 140, y);
-            doc.line(20, y+2, 190, y+2);
+        const summaryElement = document.getElementById("record-report-summary");
+        const tableElement = document.getElementById("record-report-table");
+        
+        if (!summaryElement || !tableElement) throw new Error("Report parts not found");
+
+        const captureOptions = {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: "#ffffff",
+        };
+
+        const canvasSummary = await html2canvas(summaryElement, captureOptions);
+        const canvasTable = await html2canvas(tableElement, captureOptions);
+        
+        const pdf = new jsPDF("p", "mm", "a4");
+        const pdfWidth = pdf.internal.pageSize.getWidth();
+        const pdfHeight = pdf.internal.pageSize.getHeight();
+        
+        // PAGE 1: Summary
+        const imgWidth1 = pdfWidth;
+        const imgHeight1 = (canvasSummary.height * pdfWidth) / canvasSummary.width;
+        pdf.addImage(canvasSummary.toDataURL("image/png"), "PNG", 0, 0, imgWidth1, imgHeight1);
+        
+        // PAGE 2+: Table
+        pdf.addPage();
+        const imgWidth2 = pdfWidth;
+        const imgHeight2 = (canvasTable.height * pdfWidth) / canvasTable.width;
+        
+        if (imgHeight2 <= pdfHeight) {
+            pdf.addImage(canvasTable.toDataURL("image/png"), "PNG", 0, 0, imgWidth2, imgHeight2);
+        } else {
+            let sourceY = 0;
+            let isFirstTablePage = true;
+            const pxPageHeight = Math.floor((pdfHeight * canvasTable.width) / pdfWidth);
             
-            y += 10;
-            solarData.crops.forEach((crop: any, i: number) => {
-                doc.text(`#${i+1}`, 20, y);
-                doc.text(`${crop.lat.toFixed(2)}`, 40, y);
-                doc.text(`${crop.lon.toFixed(2)}`, 70, y);
-                doc.text(`${crop.mcintosh_full || "N/A"}`, 100, y);
-                doc.text(`${crop.mag_class || "N/A"}`, 140, y);
-                y += 8;
-            });
+            while (sourceY < canvasTable.height) {
+                const pageCanvas = document.createElement('canvas');
+                pageCanvas.width = canvasTable.width;
+                const currentSliceHeight = Math.min(pxPageHeight, canvasTable.height - sourceY);
+                pageCanvas.height = currentSliceHeight;
+                const ctx = pageCanvas.getContext('2d');
+                if (ctx) {
+                    ctx.drawImage(canvasTable, 0, sourceY, canvasTable.width, currentSliceHeight, 0, 0, canvasTable.width, currentSliceHeight);
+                    if (!isFirstTablePage) pdf.addPage();
+                    pdf.addImage(pageCanvas.toDataURL("image/png"), "PNG", 0, 0, pdfWidth, (currentSliceHeight * pdfWidth) / canvasTable.width);
+                    isFirstTablePage = false;
+                }
+                sourceY += pxPageHeight;
+                if (sourceY <= 0) break;
+            }
         }
-        doc.save(`solar_report_${selectedDate}.pdf`);
-    } catch (err) {
-        console.error(err);
-        alert("Error al generar PDF");
+
+        pdf.save(`Informe_Solar_${selectedDate.replace(/-/g, "")}.pdf`);
+    } catch (err: any) {
+        console.error("Error generating PDF:", err);
+        alert(`Error al generar el PDF: ${err.message}`);
     } finally {
         setDownloading(false);
     }
   };
+
+  const isTrainingData = selectedDate ? parseInt(selectedDate.split("-")[0]) <= 2025 : false;
 
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen bg-slate-50">
@@ -276,6 +306,128 @@ export default function RecordsPage() {
             </div>
         </div>
       </div>
+
+    <div id="hidden-report-container" className="fixed left-[-9999px] top-0 w-[1024px] pointer-events-none opacity-0">
+        {selectedSolarData && selectedDate && (
+            <div className="flex flex-col gap-10 bg-white p-10">
+                <div id="record-report-summary" className="bg-[#ffffff] rounded-xl border border-[#e2e8f0] p-10 flex flex-col text-[#0f172a]">
+                    <div className="flex justify-between border-b border-[#e2e8f0] pb-6 mb-8 gap-4">
+                        <div className="flex items-center gap-4">
+                            <div className="w-11 h-11 bg-[#0f172a] border border-[#1e293b] rounded-md flex items-center justify-center text-white font-black text-sm shadow-sm">SOL</div>
+                            <div>
+                                <h2 className="text-xl font-bold text-[#0f172a]">Informe de Registro Heliográfico</h2>
+                                <p className="text-[11px] font-semibold text-[#94a3b8] mt-0.5 uppercase tracking-widest">Heliographic Research Center — FIUNA</p>
+                            </div>
+                        </div>
+                        <div className="text-right">
+                            <p className="text-[10px] font-black text-[#94a3b8] mb-1 uppercase tracking-widest">Referencia</p>
+                            <p className="text-base font-mono font-bold text-[#0f172a]">REF-{selectedDate.replace(/-/g, "")}-ARCH</p>
+                        </div>
+                    </div>
+
+                    <div className="mb-10 space-y-4">
+                        <h4 className="text-[10px] font-black border-b border-[#f1f5f9] pb-2 text-[#64748b] uppercase tracking-widest">Resumen Visual del Disco</h4>
+                        <div className="aspect-square max-w-sm mx-auto bg-black rounded-full overflow-hidden border-4 border-[#f1f5f9] relative">
+                            <img src={`https://vps-4530064-x.dattaweb.com/full_disk/${selectedDate}.jpg`} alt="Full Disk" className="w-full h-full object-cover" crossOrigin="anonymous"/>
+                            <svg viewBox="0 0 1024 1024" className="absolute inset-0 w-full h-full opacity-40">
+                                {selectedSolarData.crops?.map((d: any, idx: number) => (
+                                    <rect 
+                                        key={idx} 
+                                        x={d.x - d.w/2} 
+                                        y={d.y - d.h/2} 
+                                        width={d.w} 
+                                        height={d.h} 
+                                        fill="none" 
+                                        stroke="#22c55e" 
+                                        strokeWidth="4" 
+                                    />
+                                ))}
+                            </svg>
+                        </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-8 mb-10">
+                        <div className="space-y-3">
+                            <h4 className="text-[10px] font-black border-b border-[#f1f5f9] pb-2 text-[#64748b] uppercase tracking-widest">Procedencia del Registro</h4>
+                            <p className="text-base font-bold text-[#0f172a]">{isTrainingData ? "Sistemas NOAA / SDO / NASA" : "Investigador Principal"}</p>
+                            <p className="text-sm font-medium text-[#64748b]">{isTrainingData ? "Red Global de Observatorios" : "Investigador Verificado"}</p>
+                        </div>
+                        <div className="space-y-3">
+                            <h4 className="text-[10px] font-black border-b border-[#f1f5f9] pb-2 text-[#64748b] uppercase tracking-widest">Contexto Temporal</h4>
+                            <div className="grid grid-cols-2 gap-4">
+                                <div>
+                                    <p className="text-[10px] font-black text-[#94a3b8] mb-1 uppercase tracking-widest">Fecha</p>
+                                    <p className="text-sm font-mono font-medium text-[#0f172a]">{selectedDate}</p>
+                                </div>
+                                <div>
+                                    <p className="text-[10px] font-black text-[#94a3b8] mb-1 uppercase tracking-widest">Periodo</p>
+                                    <p className="text-sm font-mono font-medium text-[#0f172a]">{isTrainingData ? "Entrenamiento" : "Validación"}</p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="mb-10 p-4 bg-[#f8fafc] rounded-lg border border-[#f1f5f9] space-y-2">
+                        <h4 className="text-[10px] font-black text-[#64748b] uppercase tracking-widest flex items-center gap-2">
+                            <Activity className="h-3 w-3" /> Notas del Archivo
+                        </h4>
+                        <p className="text-xs text-[#475569] leading-relaxed italic">
+                            {isTrainingData 
+                                ? "Este registro corresponde a datos históricos de la NOAA y el SDO. Estos fueron empleados como base de entrenamiento para los modelos YOLO26n y ConvNextV2 utilizados en este sistema."
+                                : "Este registro ha sido generado mediante el proceso de análisis estándar del observatorio, utilizando modelos de visión artificial validados."
+                            }
+                        </p>
+                    </div>
+                </div>
+
+                <div id="record-report-table" className="bg-[#ffffff] rounded-xl border border-[#e2e8f0] p-10 flex flex-col text-[#0f172a]">
+                    <div className="space-y-4">
+                        <h4 className="text-[10px] font-black border-b border-[#f1f5f9] pb-2 flex justify-between items-center text-[#64748b] uppercase tracking-widest">
+                            Detalle de Manchas Registradas
+                        </h4>
+                        <div className="overflow-x-auto rounded-lg border border-[#e2e8f0]">
+                            <table className="w-full text-left border-collapse min-w-[600px]">
+                                <thead>
+                                    <tr className="text-[10px] font-black text-[#94a3b8] border-b border-[#e2e8f0] bg-[#f8fafc] uppercase tracking-widest">
+                                        <th className="p-4">Ref ID</th>
+                                        <th className="p-4">Latitud (°)</th>
+                                        <th className="p-4">Longitud (°)</th>
+                                        <th className="p-4">McIntosh</th>
+                                        <th className="p-4 text-right">Magnético</th>
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-[#f1f5f9] text-sm bg-white">
+                                    {selectedSolarData.crops?.map((crop: any, idx: number) => (
+                                        <tr key={idx}>
+                                            <td className="p-4 font-mono text-[10px]">SPT-{idx + 1}</td>
+                                            <td className="p-4 font-bold">{crop.lat.toFixed(2)}</td>
+                                            <td className="p-4 font-bold">{crop.lon.toFixed(2)}</td>
+                                            <td className="p-4">
+                                                <span className="bg-[#0f172a] text-white px-2.5 py-1 rounded-md text-xs font-black shadow-sm">{crop.mcintosh_full || "N/A"}</span>
+                                            </td>
+                                            <td className="p-4 text-right font-bold text-[#334155]">{crop.mag_class || "None"}</td>
+                                        </tr>
+                                    ))}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div className="mt-12 pt-6 border-t border-[#f1f5f9] flex justify-between items-end gap-6">
+                        <div className="space-y-1.5">
+                            <p className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest">Archivo Histórico</p>
+                            <div className="h-px w-28 bg-[#e2e8f0]" />
+                            <p className="text-[10px] font-semibold text-[#94a3b8]">Base de Datos Heliográfica — FIUNA</p>
+                        </div>
+                        <div className="text-right">
+                             <p className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest mb-2">Sello de Archivo</p>
+                             <div className="h-px w-32 bg-[#0f172a] ml-auto" />
+                        </div>
+                    </div>
+                </div>
+            </div>
+        )}
+    </div>
     </div>
   );
 }
