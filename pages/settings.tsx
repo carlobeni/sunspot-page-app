@@ -129,7 +129,7 @@ export default function SettingsPage() {
                       type="text" 
                       value={formData.name}
                       onChange={(e) => setFormData({...formData, name: e.target.value})}
-                      className="block w-full rounded-md border border-slate-200 bg-white py-2.5 px-3 text-slate-900 focus:border-indigo-500 outline-none text-sm transition-colors shadow-sm" 
+                      className="block w-full rounded-md border border-slate-200 bg-white py-2.5 px-3 text-slate-900 focus:border-slate-800 outline-none text-sm transition-colors shadow-sm" 
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -139,7 +139,7 @@ export default function SettingsPage() {
                       type="email" 
                       value={formData.email}
                       onChange={(e) => setFormData({...formData, email: e.target.value})}
-                      className="block w-full rounded-md border border-slate-200 bg-white py-2.5 px-3 text-slate-900 focus:border-indigo-500 outline-none text-sm transition-colors shadow-sm" 
+                      className="block w-full rounded-md border border-slate-200 bg-white py-2.5 px-3 text-slate-900 focus:border-slate-800 outline-none text-sm transition-colors shadow-sm" 
                     />
                   </div>
                   <div className="space-y-1.5">
@@ -147,7 +147,7 @@ export default function SettingsPage() {
                     <select 
                       value={formData.role}
                       onChange={(e) => setFormData({...formData, role: e.target.value})}
-                      className="block w-full rounded-md border border-slate-200 bg-white py-2.5 px-3 text-slate-900 focus:border-indigo-500 outline-none text-sm transition-colors shadow-sm"
+                      className="block w-full rounded-md border border-slate-200 bg-white py-2.5 px-3 text-slate-900 focus:border-slate-800 outline-none text-sm transition-colors shadow-sm"
                     >
                       <option value="Visualizador">Visualizador</option>
                       <option value="Administrador">Administrador</option>
@@ -164,7 +164,7 @@ export default function SettingsPage() {
                     type="password"
                     value={formData.password}
                     onChange={(e) => setFormData({...formData, password: e.target.value})}
-                    className="block w-full rounded-md border border-slate-200 bg-white py-2.5 px-3 text-slate-900 focus:border-indigo-500 outline-none text-sm transition-colors shadow-sm" 
+                    className="block w-full rounded-md border border-slate-200 bg-white py-2.5 px-3 text-slate-900 focus:border-slate-800 outline-none text-sm transition-colors shadow-sm" 
                   />
                 </div>
               )}
@@ -180,7 +180,7 @@ export default function SettingsPage() {
                 <button 
                   type="submit" 
                   disabled={isSubmitting}
-                  className="flex items-center justify-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-indigo-600 hover:bg-indigo-700 transition-all rounded-md disabled:opacity-50 shadow-sm"
+                  className="flex items-center justify-center gap-2 px-6 py-2 text-sm font-semibold text-white bg-slate-800 hover:bg-slate-900 transition-all rounded-md disabled:opacity-50 shadow-sm"
                 >
                   {isSubmitting ? <div className="h-4 w-4 border-2 border-slate-200 border-t-white rounded-sm animate-spin" /> : <Save className="h-4 w-4" />}
                   {isSubmitting ? "Guardando..." : "Guardar"}
@@ -195,7 +195,7 @@ export default function SettingsPage() {
       <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <h1 className="text-xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
-            <SettingsIcon className="h-6 w-6 md:h-8 md:w-8 text-indigo-600" />
+            <SettingsIcon className="h-6 w-6 md:h-8 md:w-8 text-slate-800" />
             Configuración
           </h1>
           <p className="text-slate-500 mt-1.5 text-sm md:text-base font-medium max-w-xl hidden md:block">
@@ -205,7 +205,7 @@ export default function SettingsPage() {
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-md bg-indigo-600 hover:bg-indigo-700 text-white font-semibold text-sm transition-all w-full md:w-auto shadow-sm"
+          className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-md bg-slate-800 hover:bg-slate-900 text-white font-semibold text-sm transition-all w-full md:w-auto shadow-sm"
         >
           {isSaving ? <div className="h-4 w-4 border-2 border-slate-200 border-t-white rounded-sm animate-spin" /> : <Save className="h-4 w-4" />}
           {isSaving ? "Guardando..." : "Guardar Cambios"}
@@ -227,11 +227,11 @@ export default function SettingsPage() {
                 className={cn(
                   "flex items-center gap-3 px-4 py-3 rounded-md text-sm font-semibold transition-all whitespace-nowrap",
                   activeTab === tab.id
-                    ? "bg-indigo-50 text-indigo-700 shadow-sm border border-indigo-100"
+                    ? "bg-slate-100 text-slate-900 shadow-sm border border-slate-200"
                     : "text-slate-600 hover:bg-white hover:text-slate-900 border border-transparent"
                 )}
               >
-                <Icon className={cn("h-4 w-4", activeTab === tab.id ? "text-indigo-600" : "text-slate-400")} />
+                <Icon className={cn("h-4 w-4", activeTab === tab.id ? "text-slate-800" : "text-slate-400")} />
                 {tab.name}
               </button>
             );
@@ -246,7 +246,7 @@ export default function SettingsPage() {
             {activeTab === "general" && (
                <div className="p-6 lg:p-10 space-y-8 animate-in fade-in duration-500">
                 <div className="flex items-center gap-3 pb-4 border-b border-slate-200">
-                  <Cpu className="h-6 w-6 text-indigo-600" />
+                  <Cpu className="h-6 w-6 text-slate-800" />
                   <h2 className="text-lg font-bold text-slate-900">Red Inalámbrica (Hotspot)</h2>
                 </div>
                 
@@ -264,18 +264,18 @@ export default function SettingsPage() {
                           defaultChecked 
                           disabled={activeUserRole !== "Administrador"}
                         />
-                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-800"></div>
                       </label>
                     </div>
                     
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-6 border-t border-slate-200">
                       <div className="space-y-1.5">
                         <label className="block text-xs font-semibold text-slate-600">Nombre (SSID)</label>
-                        <input type="text" defaultValue="Sunspot_LAN_01" disabled={activeUserRole !== "Administrador"} className="block w-full bg-white border border-slate-200 rounded-md py-2 px-3 text-sm text-slate-900 font-mono focus:border-indigo-500 outline-none transition-colors shadow-sm" />
+                        <input type="text" defaultValue="Sunspot_LAN_01" disabled={activeUserRole !== "Administrador"} className="block w-full bg-white border border-slate-200 rounded-md py-2 px-3 text-sm text-slate-900 font-mono focus:border-slate-800 outline-none transition-colors shadow-sm" />
                       </div>
                       <div className="space-y-1.5">
                         <label className="block text-xs font-semibold text-slate-600">Contraseña</label>
-                        <input type="password" defaultValue="admin123" disabled={activeUserRole !== "Administrador"} className="block w-full bg-white border border-slate-200 rounded-md py-2 px-3 text-sm text-slate-900 focus:border-indigo-500 outline-none transition-colors shadow-sm" />
+                        <input type="password" defaultValue="admin123" disabled={activeUserRole !== "Administrador"} className="block w-full bg-white border border-slate-200 rounded-md py-2 px-3 text-sm text-slate-900 focus:border-slate-800 outline-none transition-colors shadow-sm" />
                       </div>
                     </div>
                   </div>
@@ -293,7 +293,7 @@ export default function SettingsPage() {
                           defaultChecked 
                           disabled={activeUserRole !== "Administrador"}
                         />
-                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-indigo-600"></div>
+                        <div className="w-11 h-6 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-slate-800"></div>
                       </label>
                     </div>
 
@@ -308,9 +308,9 @@ export default function SettingsPage() {
                           { ssid: "FIUNA_Alumnos", signal: "Buena", security: "Abierta", connected: false },
                           { ssid: "Sunspot_Research", signal: "Regular", security: "WPA3", connected: false },
                         ].map((net, i) => (
-                          <div key={i} className={cn("p-4 flex items-center justify-between", net.connected ? "bg-indigo-50/50" : "hover:bg-slate-50")}>
+                          <div key={i} className={cn("p-4 flex items-center justify-between", net.connected ? "bg-slate-100" : "hover:bg-slate-50")}>
                             <div className="flex flex-col">
-                              <span className={cn("text-sm font-bold", net.connected ? "text-indigo-700" : "text-slate-700")}>
+                              <span className={cn("text-sm font-bold", net.connected ? "text-slate-900" : "text-slate-700")}>
                                 {net.ssid}
                               </span>
                               <span className="text-xs text-slate-500 mt-0.5 flex items-center gap-2 font-medium">
@@ -326,7 +326,7 @@ export default function SettingsPage() {
                             ) : (
                               <button 
                                 disabled={activeUserRole !== "Administrador"}
-                                className="text-xs font-semibold text-slate-600 bg-white border border-slate-200 px-4 py-1.5 rounded hover:bg-slate-50 hover:text-indigo-600 transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
+                                className="text-xs font-semibold text-slate-600 bg-white border border-slate-200 px-4 py-1.5 rounded hover:bg-slate-50 hover:text-slate-900 transition-colors disabled:opacity-50 shadow-sm cursor-pointer"
                               >
                                 Conectar
                               </button>
@@ -351,7 +351,7 @@ export default function SettingsPage() {
                   {activeUserRole === "Administrador" && (
                     <button 
                       onClick={openAddUserModal}
-                      className="text-sm font-semibold bg-white border border-slate-200 shadow-sm hover:border-indigo-600 hover:text-indigo-700 text-slate-700 px-4 py-2 rounded-md transition-colors"
+                      className="text-sm font-semibold bg-white border border-slate-200 shadow-sm hover:border-slate-800 hover:text-slate-900 text-slate-700 px-4 py-2 rounded-md transition-colors"
                     >
                       Añadir Usuario
                     </button>
@@ -373,7 +373,7 @@ export default function SettingsPage() {
                         <tr key={user.id} className="hover:bg-slate-50 transition-colors">
                           <td className="px-6 py-4">
                             <div className="flex items-center gap-3">
-                              <div className="h-10 w-10 rounded-full border border-slate-200 shadow-sm bg-indigo-50 flex items-center justify-center font-bold text-indigo-700">
+                              <div className="h-10 w-10 rounded-full border border-slate-200 shadow-sm bg-slate-100 flex items-center justify-center font-bold text-slate-800">
                                 {user.name.charAt(0)}
                               </div>
                               <div>
@@ -386,7 +386,7 @@ export default function SettingsPage() {
                             <span className={cn(
                               "inline-flex items-center rounded-md px-2.5 py-1 text-xs font-bold border shadow-sm",
                               user.role === "Administrador" 
-                                ? "bg-indigo-50 text-indigo-700 border-indigo-200" 
+                                ? "bg-slate-100 text-slate-900 border-slate-200" 
                                 : "bg-white text-slate-600 border-slate-200"
                             )}>
                               {user.role}
@@ -400,7 +400,7 @@ export default function SettingsPage() {
                               <div className="flex justify-end gap-1.5">
                                 <button 
                                   onClick={() => openEditUserModal(user)}
-                                  className="p-2 text-slate-400 hover:text-indigo-600 hover:bg-indigo-50 rounded-md transition-colors"
+                                  className="p-2 text-slate-400 hover:text-slate-900 hover:bg-slate-100 rounded-md transition-colors"
                                   title="Editar info"
                                 >
                                   <Pencil className="h-4 w-4" />

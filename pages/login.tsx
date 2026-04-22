@@ -41,14 +41,14 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Decorative Background Mesh */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden opacity-40">
-        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-indigo-200/30 blur-[120px] rounded-full" />
+        <div className="absolute -top-[10%] -left-[10%] w-[40%] h-[40%] bg-slate-200/30 blur-[120px] rounded-full" />
         <div className="absolute top-[60%] -right-[10%] w-[40%] h-[40%] bg-slate-200/50 blur-[120px] rounded-full" />
       </div>
 
       <div className="max-w-md w-full space-y-8 bg-white/95 backdrop-blur-md p-8 sm:p-10 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.02),0_1px_8px_rgb(0,0,0,0.01)] border border-slate-100/50 relative z-10">
         <div className="flex flex-col items-center">
-          <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center mb-6 shadow-sm transition-transform hover:scale-105 duration-300">
-            <View className="h-7 w-7 text-indigo-600" strokeWidth={1.5} />
+          <div className="w-14 h-14 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center mb-6 shadow-sm transition-transform hover:scale-105 duration-300">
+            <View className="h-7 w-7 text-slate-800" strokeWidth={1.5} />
           </div>
           <h2 className="text-center text-3xl font-extrabold text-slate-900 tracking-tight">
             Ingresar
@@ -73,7 +73,7 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 required
-                className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none text-sm transition-all shadow-sm font-medium"
+                className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 focus:ring-4 focus:ring-slate-800/5 outline-none text-sm transition-all shadow-sm font-medium"
                 placeholder="usuario@dominio.com"
                 disabled={isLoading || isPending}
               />
@@ -86,7 +86,7 @@ export default function LoginPage() {
                 type="password"
                 autoComplete="current-password"
                 required
-                className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none text-sm transition-all shadow-sm font-medium"
+                className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 focus:ring-4 focus:ring-slate-800/5 outline-none text-sm transition-all shadow-sm font-medium"
                 placeholder="••••••••"
                 disabled={isLoading || isPending}
               />
@@ -99,7 +99,7 @@ export default function LoginPage() {
                 id="remember-me"
                 name="remember-me"
                 type="checkbox"
-                className="h-4 w-4 rounded border-slate-300 text-indigo-600 focus:ring-indigo-500 cursor-pointer"
+                className="h-4 w-4 rounded border-slate-300 text-slate-800 focus:ring-slate-800 cursor-pointer"
                 disabled={isLoading || isPending}
               />
               <label htmlFor="remember-me" className="ml-2.5 block text-sm font-medium text-slate-700 cursor-pointer hover:text-slate-900 transition-colors">
@@ -108,7 +108,7 @@ export default function LoginPage() {
             </div>
 
             <div className="text-sm">
-              <Link href="/recover" className="font-bold text-indigo-800 hover:text-indigo-950 transition-colors">
+              <Link href="/recover" className="font-bold text-slate-700 hover:text-slate-900 transition-colors">
                 ¿Olvidaste tu contraseña?
               </Link>
             </div>
@@ -118,7 +118,7 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={isLoading || isPending}
-              className="group relative flex w-full justify-center items-center gap-2.5 rounded-xl bg-indigo-600 px-4 py-3.5 text-sm font-bold text-white hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500/20 disabled:opacity-50 transition-all shadow-md hover:shadow-xl active:scale-[0.98]"
+              className="group relative flex w-full justify-center items-center gap-2.5 rounded-xl bg-slate-800 px-4 py-3.5 text-sm font-bold text-white hover:bg-slate-900 focus:ring-4 focus:ring-slate-800/20 disabled:opacity-50 transition-all shadow-md hover:shadow-xl active:scale-[0.98]"
             >
               {(isLoading || isPending) ? (
                 <>
@@ -136,7 +136,7 @@ export default function LoginPage() {
 
           <div className="text-center pt-8 border-t border-slate-100">
              <span className="text-sm font-medium text-slate-700">¿No tienes cuenta?</span>
-             <Link href="/register" className="ml-2 text-sm font-bold text-indigo-800 hover:text-indigo-950 transition-colors border-b border-indigo-800/30 hover:border-indigo-800">
+             <Link href="/register" className="ml-2 text-sm font-bold text-slate-800 hover:text-slate-900 transition-colors border-b border-slate-800/30 hover:border-slate-800">
                Regístrate
              </Link>
           </div>

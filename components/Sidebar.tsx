@@ -44,10 +44,10 @@ export function Sidebar() {
     <>
       <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 z-40 flex items-center justify-between px-4 shadow-sm">
         <div className="flex items-center gap-3">
-          <View className="h-6 w-6 text-indigo-600" />
+          <View className="h-6 w-6 text-slate-800" />
           <span className="text-base font-semibold text-slate-900 hidden sm:block">Sunspot Panel</span>
         </div>
-        <button onClick={() => setIsOpen(!isOpen)} className="p-2 text-slate-500 hover:text-indigo-600">
+        <button onClick={() => setIsOpen(!isOpen)} className="p-2 text-slate-500 hover:text-slate-800">
           {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
@@ -64,7 +64,7 @@ export function Sidebar() {
         isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
         <div className="hidden lg:flex items-center gap-3 p-8 border-b border-slate-200">
-          <View className="h-8 w-8 text-indigo-600" />
+          <View className="h-8 w-8 text-slate-800" />
           <span className="text-xl font-bold text-slate-900 tracking-tight">Sunspot Panel</span>
         </div>
         
@@ -81,14 +81,14 @@ export function Sidebar() {
                 className={cn(
                   "group flex items-center px-6 py-3 text-sm font-medium transition-all duration-200 rounded-lg mx-3 my-1",
                   isActive
-                    ? "bg-indigo-50 text-indigo-700"
+                    ? "bg-slate-100 text-slate-900"
                     : "text-slate-600 hover:bg-slate-50 hover:text-slate-900"
                 )}
               >
                 <Icon
                   className={cn(
                     "mr-3 h-5 w-5 flex-shrink-0 transition-colors",
-                    isActive ? "text-indigo-600" : "text-slate-400 group-hover:text-slate-600"
+                    isActive ? "text-slate-800" : "text-slate-400 group-hover:text-slate-600"
                   )}
                   strokeWidth={isActive ? 2.5 : 2}
                   aria-hidden="true"
@@ -102,7 +102,7 @@ export function Sidebar() {
         <div className="p-6 border-t border-slate-200">
           <div className="flex items-center gap-3 bg-slate-50 p-4 mb-4 rounded-lg mx-2 border border-slate-100">
             <div className="h-10 w-10 rounded-full bg-white flex items-center justify-center border border-slate-200 flex-shrink-0 shadow-sm">
-              <span className="text-sm font-bold text-indigo-700">{userInitials}</span>
+              <span className="text-sm font-bold text-slate-900">{userInitials}</span>
             </div>
             <div className="flex flex-col min-w-0">
               <span className="text-sm font-semibold text-slate-900 truncate capitalize">{userName}</span>

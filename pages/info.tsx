@@ -8,7 +8,7 @@ export default function InfoPage() {
       <div className="mb-6 border-b border-slate-200 pb-4 flex flex-col md:flex-row md:items-end justify-between gap-4">
         <div>
           <h1 className="text-xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
-             <Info className="h-6 w-6 md:h-8 md:w-8 text-indigo-600" />
+             <Info className="h-6 w-6 md:h-8 md:w-8 text-slate-800" />
              Información
           </h1>
           <p className="text-slate-500 mt-1.5 text-sm md:text-base font-medium max-w-xl hidden md:block">
@@ -29,7 +29,7 @@ export default function InfoPage() {
              <Cpu className="h-24 w-24 text-slate-900" />
           </div>
           <div className="flex items-center gap-3 pb-6 border-b border-slate-200 mb-8">
-             <Server className="h-6 w-6 text-indigo-600" />
+             <Server className="h-6 w-6 text-slate-800" />
              <h2 className="text-lg font-bold text-slate-900">Especificaciones Técnicas</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -56,7 +56,7 @@ export default function InfoPage() {
           {/* Institutions Section */}
           <section className="bg-white rounded-xl border border-slate-200 shadow-sm p-6 lg:p-10 flex flex-col items-center">
             <div className="flex items-center gap-3 pb-6 border-b border-slate-200 mb-8 self-stretch">
-               <Building2 className="h-6 w-6 text-indigo-600" />
+               <Building2 className="h-6 w-6 text-slate-800" />
                <h2 className="text-lg font-bold text-slate-900">Filiación</h2>
             </div>
             <div className="flex items-center justify-center gap-8 w-full p-6 bg-slate-50 border border-slate-200 rounded-lg">

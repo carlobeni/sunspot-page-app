@@ -23,7 +23,7 @@ function ChartSkeleton({ height = 400, text = "Calculando…" }: { height?: numb
       className="w-full rounded-lg bg-slate-50 border border-slate-200 flex items-center justify-center animate-pulse shadow-sm"
     >
       <div className="flex flex-col items-center gap-3 opacity-60">
-        <div className="w-8 h-8 border-2 border-slate-200 border-t-indigo-500 rounded-xl animate-spin" />
+        <div className="w-8 h-8 border-2 border-slate-200 border-t-slate-600 rounded-xl animate-spin" />
         <span className="text-sm text-slate-500 font-bold">{text}</span>
       </div>
     </div>
@@ -119,7 +119,7 @@ export default function TrendsPage() {
   if (baseLoading) return (
     <div className="flex items-center justify-center min-h-screen bg-slate-50">
       <div className="flex flex-col items-center gap-6">
-        <div className="w-16 h-16 border-4 border-slate-200 border-t-indigo-600 rounded-xl shadow-sm animate-spin" />
+        <div className="w-16 h-16 border-4 border-slate-200 border-t-slate-800 rounded-xl shadow-sm animate-spin" />
         <span className="text-slate-500 font-bold tracking-widest animate-pulse uppercase">
           Sincronizando Ciclo…
         </span>
@@ -134,7 +134,7 @@ export default function TrendsPage() {
       <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <h1 className="text-xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
-             <TrendingUp className="h-6 w-6 md:h-8 md:w-8 text-indigo-600" />
+             <TrendingUp className="h-6 w-6 md:h-8 md:w-8 text-slate-800" />
              Tendencia
           </h1>
         </div>
@@ -146,7 +146,7 @@ export default function TrendsPage() {
         
         <div className="flex items-center gap-3 w-full sm:w-auto">
           <div className="relative group flex-1 sm:flex-none">
-            <div className="flex items-center gap-2 bg-white border border-slate-200 hover:border-indigo-300 transition-all rounded-lg px-4 py-2 w-full shadow-sm">
+            <div className="flex items-center gap-2 bg-white border border-slate-200 hover:border-slate-800 transition-all rounded-lg px-4 py-2 w-full shadow-sm">
               <div className="flex flex-col relative flex-1">
                 <select
                   value={forecastHorizon}
@@ -165,7 +165,7 @@ export default function TrendsPage() {
           <button
             onClick={() => fetchForecast(forecastHorizon)}
             disabled={forecastLoading}
-            className="flex items-center justify-center p-3 rounded-lg bg-indigo-600 hover:bg-indigo-700 text-white disabled:opacity-50 transition-all shrink-0 shadow-md"
+            className="flex items-center justify-center p-3 rounded-lg bg-slate-800 hover:bg-slate-900 text-white disabled:opacity-50 transition-all shrink-0 shadow-md"
             title="Sincronizar Predicción"
           >
             <Zap className={`h-5 w-5 ${forecastLoading ? 'animate-spin' : ''}`} />
@@ -177,7 +177,7 @@ export default function TrendsPage() {
       <div className="bg-white p-4 lg:p-8 rounded-xl border border-slate-200 shadow-sm min-h-[400px]">
         <h3 className="text-sm font-bold text-slate-500 mb-1 flex items-center justify-between uppercase tracking-widest">
           <span>Sunspot Number (SSN)</span>
-          <TrendingUp className="h-5 w-5 opacity-40 text-indigo-600" />
+          <TrendingUp className="h-5 w-5 opacity-40 text-slate-800" />
         </h3>
         
         {!mounted || forecastLoading || !renderSsn ? <ChartSkeleton height={400} text="Generando Serie SSN..." /> : (
@@ -198,10 +198,10 @@ export default function TrendsPage() {
                 <Legend verticalAlign="top" height={40} iconType="circle"
                   wrapperStyle={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 800, paddingBottom: "20px" }} />
                 <Line isAnimationActive={false} type="monotone" dataKey="historySsn" name="Histórico" stroke="#94a3b8" strokeWidth={3} dot={false} strokeOpacity={0.6} />
-                <Line isAnimationActive={false} type="monotone" dataKey="hathawaySSN" name="Kalman Filter" stroke="#4f46e5" strokeWidth={3} dot={false} strokeDasharray="8 6" />
+                <Line isAnimationActive={false} type="monotone" dataKey="hathawaySSN" name="Kalman Filter" stroke="#1e293b" strokeWidth={3} dot={false} strokeDasharray="8 6" />
                 {predictions[monthIdx]?.yearFloat != null && (
-                  <ReferenceLine x={predictions[monthIdx].yearFloat} stroke="#4f46e5" strokeWidth={2} strokeDasharray="4 4"
-                    label={{ value: predictions[monthIdx].month, position: "top", fill: "#4f46e5", fontSize: 10, fontWeight: "bold" }} />
+                  <ReferenceLine x={predictions[monthIdx].yearFloat} stroke="#64748b" strokeWidth={2} strokeDasharray="4 4"
+                    label={{ value: predictions[monthIdx].month, position: "top", fill: "#334155", fontSize: 10, fontWeight: "bold" }} />
                 )}
               </ComposedChart>
             </div>
@@ -213,7 +213,7 @@ export default function TrendsPage() {
       <div className="mt-6 bg-white p-4 lg:p-8 rounded-xl border border-slate-200 shadow-sm min-h-[400px] mb-12">
         <h3 className="text-sm font-bold text-slate-500 mb-1 flex items-center justify-between uppercase tracking-widest">
           <span>Distribución Latitudinal (Spörer)</span>
-          <MapIcon className="h-5 w-5 opacity-40 text-indigo-600" />
+          <MapIcon className="h-5 w-5 opacity-40 text-slate-800" />
         </h3>
         
         {!mounted || forecastLoading || !renderButterfly ? <ChartSkeleton height={400} text="Mapeando Latitudes..." /> : (
@@ -237,11 +237,11 @@ export default function TrendsPage() {
                 <Legend verticalAlign="top" height={40} iconType="circle"
                   wrapperStyle={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 800, paddingBottom: "20px" }} />
                 {predictions[monthIdx]?.yearFloat != null && (
-                  <ReferenceLine x={predictions[monthIdx].yearFloat} stroke="#4f46e5" strokeWidth={2} strokeDasharray="4 4"
-                    label={{ value: predictions[monthIdx].month, position: "top", fill: "#4f46e5", fontSize: 10, fontWeight: "bold" }} />
+                  <ReferenceLine x={predictions[monthIdx].yearFloat} stroke="#64748b" strokeWidth={2} strokeDasharray="4 4"
+                    label={{ value: predictions[monthIdx].month, position: "top", fill: "#334155", fontSize: 10, fontWeight: "bold" }} />
                 )}
                 <Scatter isAnimationActive={false} name="Registros Históricos" data={butterflyHistorical} fill="#94a3b8" fillOpacity={0.4} />
-                <Scatter isAnimationActive={false} name="Modelo Generativo" data={butterflyForecast} fill="#4f46e5" fillOpacity={0.7} />
+                <Scatter isAnimationActive={false} name="Modelo Generativo" data={butterflyForecast} fill="#1e293b" fillOpacity={0.7} />
               </ScatterChart>
             </div>
           </div>

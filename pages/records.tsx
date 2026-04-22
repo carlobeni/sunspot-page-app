@@ -168,7 +168,7 @@ export default function RecordsPage() {
   if (loading) return (
     <div className="flex items-center justify-center min-h-screen bg-slate-50">
       <div className="flex flex-col items-center gap-6">
-        <div className="w-16 h-16 border-4 border-slate-200 border-t-indigo-600 rounded-xl shadow-sm animate-spin" />
+        <div className="w-16 h-16 border-4 border-slate-200 border-t-slate-800 rounded-xl shadow-sm animate-spin" />
         <span className="text-slate-500 font-bold tracking-widest animate-pulse uppercase">
           Cargando Registros…
         </span>
@@ -182,7 +182,7 @@ export default function RecordsPage() {
       <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-4">
         <div>
           <h1 className="text-xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
-             <Calendar className="h-6 w-6 md:h-8 md:w-8 text-indigo-600" />
+             <Calendar className="h-6 w-6 md:h-8 md:w-8 text-slate-800" />
              Archivos
           </h1>
           <p className="text-slate-500 mt-1.5 text-sm md:text-base font-medium max-w-xl hidden md:block">
@@ -200,14 +200,14 @@ export default function RecordsPage() {
                     <select 
                         value={viewDate.getMonth()} 
                         onChange={(e) => handleMonthChange(parseInt(e.target.value))}
-                        className="w-full bg-white border border-slate-200 shadow-sm rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-500 transition-all appearance-none text-center"
+                        className="w-full bg-white border border-slate-200 shadow-sm rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-slate-800 transition-all appearance-none text-center"
                     >
                         {months.map((m, i) => <option key={m} value={i}>{m}</option>)}
                     </select>
                     <select 
                         value={viewDate.getFullYear()} 
                         onChange={(e) => handleYearChange(parseInt(e.target.value))}
-                        className="w-full bg-white border border-slate-200 shadow-sm rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-indigo-500 transition-all appearance-none text-center"
+                        className="w-full bg-white border border-slate-200 shadow-sm rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-slate-800 transition-all appearance-none text-center"
                     >
                         {years.map(y => <option key={y} value={y}>{y}</option>)}
                     </select>
@@ -237,7 +237,7 @@ export default function RecordsPage() {
                         >
                             <span className="relative z-10">{d.day}</span>
                             {d.hasRecord && !isSelected && (
-                                <span className="absolute bottom-1 w-1 h-1 bg-indigo-500 rounded-full" />
+                                <span className="absolute bottom-1 w-1 h-1 bg-slate-500 rounded-full" />
                             )}
                         </button>
                     );
@@ -263,12 +263,12 @@ export default function RecordsPage() {
                      <button 
                         onClick={handleDownloadPDF}
                         disabled={downloading}
-                        className="flex items-center gap-2 px-4 py-2 bg-white text-slate-700 border border-slate-200 hover:border-indigo-600 hover:text-indigo-700 rounded-lg text-sm font-semibold hover:bg-indigo-50 transition-all active:scale-95 group disabled:opacity-50 shadow-sm"
+                        className="flex items-center gap-2 px-4 py-2 bg-white text-slate-700 border border-slate-200 hover:border-slate-800 hover:text-slate-900 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all active:scale-95 group disabled:opacity-50 shadow-sm"
                      >
                         {downloading ? (
-                            <div className="h-4 w-4 border-2 border-slate-200 border-t-indigo-600 rounded-sm animate-spin" />
+                            <div className="h-4 w-4 border-2 border-slate-200 border-t-slate-800 rounded-sm animate-spin" />
                         ) : (
-                            <FileText className="h-4 w-4 text-slate-400 group-hover:text-indigo-600 transition-colors" />
+                            <FileText className="h-4 w-4 text-slate-400 group-hover:text-slate-800 transition-colors" />
                         )}
                         {downloading ? "Generando..." : "Exportar PDF"}
                      </button>

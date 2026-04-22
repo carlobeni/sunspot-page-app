@@ -92,7 +92,7 @@ export default function SolarDiskViewer({
       <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 mb-6 border-b border-slate-100 pb-4">
         <div>
           <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
-            <Search className="h-5 w-5 text-indigo-600" />
+            <Search className="h-5 w-5 text-slate-800" />
             Visor Heliográfico Histórico
           </h2>
           <p className="text-sm text-slate-500 mt-1 font-medium hidden md:block">
@@ -110,20 +110,20 @@ export default function SolarDiskViewer({
       {solarData && (
         <div className="flex flex-col gap-8">
           <div 
-            className="flex justify-center bg-slate-50 rounded-xl overflow-hidden p-4 relative min-h-[400px] lg:h-[600px] border border-slate-200 shadow-inner"
+            className="flex justify-center items-center bg-slate-50 rounded-xl overflow-hidden p-4 relative min-h-[400px] lg:h-[600px] border border-slate-200 shadow-inner"
             onMouseMove={handleMouseMove}
           >
               {(!imgLoaded || loading) && (
                <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-50/80 backdrop-blur-sm">
-                 <div className="w-10 h-10 border-4 border-slate-200 border-t-indigo-600 rounded-xl shadow-sm animate-spin mb-4" />
+                 <div className="w-10 h-10 border-4 border-slate-200 border-t-slate-800 rounded-xl shadow-sm animate-spin mb-4" />
                  <div className="bg-white px-4 py-2 border border-slate-200 rounded-lg shadow-sm">
-                    <p className="text-xs text-indigo-600 font-bold animate-pulse uppercase tracking-widest">
+                    <p className="text-xs text-slate-800 font-bold animate-pulse uppercase tracking-widest">
                       {loading ? "Sincronizando..." : "Renderizando..."}
                     </p>
                  </div>
                </div>
              )}
-            <div className="relative w-full max-w-[500px] aspect-square rounded-full border border-slate-300 overflow-hidden bg-black shadow-lg" 
+            <div className="relative w-full max-w-[min(100%,500px)] aspect-square rounded-full border border-slate-300 overflow-hidden bg-black shadow-lg" 
                  style={{ aspectRatio: '1/1' }}>
               {/* eslint-disable-next-line @next/next/no-img-element */}
               <img
@@ -223,7 +223,7 @@ export default function SolarDiskViewer({
                   </div>
                   <div className="text-center">
                     <span className="text-xs font-bold text-slate-900 block mb-1" style={{ fontSize: '10px' }}>LAT: {hoveredCrop.lat.toFixed(1)}°</span>
-                    <span className="text-[10px] font-bold text-indigo-600 uppercase tracking-widest block">{hoveredCrop.mcintosh_full || "Spot"}</span>
+                    <span className="text-[10px] font-bold text-slate-800 uppercase tracking-widest block">{hoveredCrop.mcintosh_full || "Spot"}</span>
                   </div>
                 </div>
             )}
@@ -233,7 +233,7 @@ export default function SolarDiskViewer({
           <div className="bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
              <div className="bg-slate-50 p-4 sm:p-6 flex justify-between items-center border-b border-slate-200">
                 <h3 className="text-sm font-bold text-slate-900">Detalle Cartográfico Espacial</h3>
-                <span className="text-xs font-semibold text-indigo-700 bg-indigo-50 border border-indigo-100 px-3 py-1.5 rounded-md">{solarData.crops.length} Registros Activos</span>
+                <span className="text-xs font-semibold text-slate-900 bg-slate-100 border border-slate-200 px-3 py-1.5 rounded-md">{solarData.crops.length} Registros Activos</span>
              </div>
              {solarData.crops.length > 0 ? (
                <div className="overflow-x-auto">

@@ -73,13 +73,13 @@ export default function RegisterPage() {
     <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Decorative Background Mesh */}
       <div className="absolute top-0 left-0 w-full h-full pointer-events-none overflow-hidden opacity-40">
-        <div className="absolute -top-[10%] -right-[10%] w-[40%] h-[40%] bg-indigo-200/30 blur-[120px] rounded-full" />
+        <div className="absolute -top-[10%] -right-[10%] w-[40%] h-[40%] bg-slate-200/30 blur-[120px] rounded-full" />
         <div className="absolute bottom-[10%] -left-[10%] w-[40%] h-[40%] bg-slate-200/50 blur-[120px] rounded-full" />
       </div>
       <div className="max-w-2xl w-full space-y-8 bg-white/95 backdrop-blur-md p-6 sm:p-10 rounded-2xl shadow-[0_8px_30px_rgb(0,0,0,0.02),0_1px_8px_rgb(0,0,0,0.01)] border border-slate-100/50 relative z-10">
         <div className="flex flex-col items-center">
-          <div className="w-14 h-14 bg-indigo-50 border border-indigo-100 rounded-2xl flex items-center justify-center mb-6 shadow-sm transition-transform hover:scale-105 duration-300">
-            <UserPlus className="h-7 w-7 text-indigo-600" strokeWidth={1.5} />
+          <div className="w-14 h-14 bg-slate-50 border border-slate-200 rounded-2xl flex items-center justify-center mb-6 shadow-sm transition-transform hover:scale-105 duration-300">
+            <UserPlus className="h-7 w-7 text-slate-800" strokeWidth={1.5} />
           </div>
           <h2 className="text-center text-3xl font-extrabold text-slate-900 tracking-tight">
             Crear Cuenta
@@ -98,7 +98,7 @@ export default function RegisterPage() {
             </div>
             <Link 
               href="/login"
-              className="inline-flex items-center gap-2 text-sm font-bold text-indigo-800 hover:text-indigo-950 transition-colors"
+              className="inline-flex items-center gap-2 text-sm font-bold text-slate-800 hover:text-slate-900 transition-colors"
             >
               Ir al Login
             </Link>
@@ -126,7 +126,7 @@ export default function RegisterPage() {
                       name="name"
                       type="text"
                       required
-                      className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none text-sm transition-all shadow-sm font-medium"
+                      className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 focus:ring-4 focus:ring-slate-800/5 outline-none text-sm transition-all shadow-sm font-medium"
                       placeholder="Juan Pérez"
                       disabled={isLoading || isPending}
                     />
@@ -139,7 +139,7 @@ export default function RegisterPage() {
                       name="age"
                       type="number"
                       required
-                      className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none text-sm transition-all shadow-sm font-medium"
+                      className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 focus:ring-4 focus:ring-slate-800/5 outline-none text-sm transition-all shadow-sm font-medium"
                       placeholder="25"
                       disabled={isLoading || isPending}
                     />
@@ -151,7 +151,7 @@ export default function RegisterPage() {
                       name="phone"
                       type="tel"
                       required
-                      className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none text-sm transition-all shadow-sm font-medium"
+                      className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 focus:ring-4 focus:ring-slate-800/5 outline-none text-sm transition-all shadow-sm font-medium"
                       placeholder="+595 9xx..."
                       disabled={isLoading || isPending}
                     />
@@ -173,7 +173,7 @@ export default function RegisterPage() {
                       name="university"
                       type="text"
                       required
-                      className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none text-sm transition-all shadow-sm font-medium"
+                      className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 focus:ring-4 focus:ring-slate-800/5 outline-none text-sm transition-all shadow-sm font-medium"
                       placeholder="Universidad Nacional de Asunción"
                       disabled={isLoading || isPending}
                     />
@@ -185,7 +185,7 @@ export default function RegisterPage() {
                       id="degree"
                       name="degree"
                       required
-                      className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none text-sm transition-all shadow-sm font-medium cursor-pointer"
+                      className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 focus:border-slate-800 focus:ring-4 focus:ring-slate-800/5 outline-none text-sm transition-all shadow-sm font-medium cursor-pointer"
                       disabled={isLoading || isPending}
                     >
                       <option value="" disabled selected>Seleccionar...</option>
@@ -200,7 +200,7 @@ export default function RegisterPage() {
                       id="country"
                       name="country"
                       required
-                      className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none text-sm transition-all shadow-sm font-medium cursor-pointer"
+                      className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 focus:border-slate-800 focus:ring-4 focus:ring-slate-800/5 outline-none text-sm transition-all shadow-sm font-medium cursor-pointer"
                       disabled={isLoading || isPending}
                     >
                       <option value="" disabled selected>Seleccionar...</option>
@@ -226,7 +226,7 @@ export default function RegisterPage() {
                       name="email"
                       type="email"
                       required
-                      className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none text-sm transition-all shadow-sm font-medium"
+                      className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 focus:ring-4 focus:ring-slate-800/5 outline-none text-sm transition-all shadow-sm font-medium"
                       placeholder="usuario@fiuna.edu.py"
                       disabled={isLoading || isPending}
                     />
@@ -239,7 +239,7 @@ export default function RegisterPage() {
                       name="password"
                       type="password"
                       required
-                      className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none text-sm transition-all shadow-sm font-medium"
+                      className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 focus:ring-4 focus:ring-slate-800/5 outline-none text-sm transition-all shadow-sm font-medium"
                       placeholder="••••••••"
                       disabled={isLoading || isPending}
                     />
@@ -251,7 +251,7 @@ export default function RegisterPage() {
                       name="confirm-password"
                       type="password"
                       required
-                      className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-500/5 outline-none text-sm transition-all shadow-sm font-medium"
+                      className="block w-full rounded-xl border border-slate-200 bg-white/50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 focus:ring-4 focus:ring-slate-800/5 outline-none text-sm transition-all shadow-sm font-medium"
                       placeholder="••••••••"
                       disabled={isLoading || isPending}
                     />
@@ -260,7 +260,7 @@ export default function RegisterPage() {
               </div>
             </div>
 
-            <div className="bg-indigo-100 p-5 border border-indigo-300 rounded-2xl shadow-sm mt-4">
+            <div className="bg-slate-100 p-5 border border-slate-200 rounded-2xl shadow-sm mt-4">
                <p className="text-xs text-black leading-relaxed font-bold flex items-start gap-2">
                  <ShieldCheck className="h-4 w-4 mt-0.5 flex-shrink-0" />
                  Nota: Todas las solicitudes de registro deben ser validadas por el sistema mediante confirmación de correo electrónico.
@@ -271,7 +271,7 @@ export default function RegisterPage() {
               <button
                 type="submit"
                 disabled={isLoading || isPending}
-                className="group relative flex w-full justify-center items-center gap-2.5 rounded-xl bg-indigo-600 px-4 py-3.5 text-sm font-bold text-white hover:bg-indigo-700 focus:ring-4 focus:ring-indigo-500/20 disabled:opacity-50 transition-all shadow-md hover:shadow-xl active:scale-[0.98]"
+                className="group relative flex w-full justify-center items-center gap-2.5 rounded-xl bg-slate-800 px-4 py-3.5 text-sm font-bold text-white hover:bg-slate-900 focus:ring-4 focus:ring-slate-800/20 disabled:opacity-50 transition-all shadow-md hover:shadow-xl active:scale-[0.98]"
               >
                 {(isLoading || isPending) ? (
                   <>
@@ -289,7 +289,7 @@ export default function RegisterPage() {
 
             <div className="text-center pt-8 border-t border-slate-100">
                <span className="text-sm font-medium text-slate-700">¿Ya tienes cuenta?</span>
-               <Link href="/login" className="ml-2 text-sm font-bold text-indigo-800 hover:text-indigo-950 transition-colors border-b border-indigo-800/30 hover:border-indigo-800">
+               <Link href="/login" className="ml-2 text-sm font-bold text-slate-800 hover:text-slate-900 transition-colors border-b border-slate-800/30 hover:border-slate-800">
                  Iniciar sesión
                </Link>
             </div>
