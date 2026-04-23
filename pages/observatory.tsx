@@ -25,6 +25,7 @@ import {
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { runYoloInference } from "../lib/yolo-inference";
+import { runClassificationInference, getConditionedProbs } from "../lib/classification-inference";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
 
@@ -1003,6 +1004,91 @@ function ClassificationTab({ image, detections, setDetections, selectedDetection
     }
   }, [selectedData, detections, setSelectedDetection]);
 
+  const [inferenceResults, setInferenceResults] = useState<Record<number, any>>({});
+  const [loadingInference, setLoadingInference] = useState(false);
+
+  // Run inference when a detection is selected if not already done
+  useEffect(() => {
+    if (!selectedDetection || !selectedData || inferenceResults[selectedDetection]) return;
+
+    const runInference = async () => {
+      setLoadingInference(true);
+      try {
+        // Create a temporary canvas to get the crop
+        const canvas = document.createElement("canvas");
+        canvas.width = 224;
+        canvas.height = 224;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
+
+        const img = new window.Image();
+        img.crossOrigin = "anonymous";
+        img.src = image;
+        await new Promise((resolve) => { img.onload = resolve; });
+
+        const scaleX = img.width / viewBox.w;
+        const scaleY = img.height / viewBox.h;
+
+        const srcX = (selectedData.x - selectedData.w / 2) * scaleX;
+        const srcY = (selectedData.y - selectedData.h / 2) * scaleY;
+        const srcW = selectedData.w * scaleX;
+        const srcH = selectedData.h * scaleY;
+
+        ctx.fillStyle = "black";
+        ctx.fillRect(0, 0, 224, 224);
+
+        const scale = Math.min(1, 224 / srcW, 224 / srcH);
+        const dstW = srcW * scale;
+        const dstH = srcH * scale;
+        const dstX = (224 - dstW) / 2;
+        const dstY = (224 - dstH) / 2;
+
+        ctx.drawImage(img, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
+
+        const result = await runClassificationInference(canvas);
+        setInferenceResults(prev => ({ ...prev, [selectedDetection]: result }));
+        
+        // Auto-select best recommendation if mcintosh is default Axx
+        if (selectedData.mcintosh === "Axx") {
+          const { pZ, pP, pC, validMask, classes } = result;
+          // Find best Z
+          const zi = pZ.indexOf(Math.max(...pZ));
+          // Get conditioned P
+          const { condP } = getConditionedProbs(pZ, pP, pC, validMask, zi, null);
+          const pi = condP.indexOf(Math.max(...condP));
+          // Get conditioned C
+          const { condC } = getConditionedProbs(pZ, pP, pC, validMask, zi, pi);
+          const ci = condC.indexOf(Math.max(...condC));
+
+          const mcintosh = `${classes.Z[zi]}${classes.P[pi]}${classes.C[ci]}`;
+          setDetections(detections.map((d: any) => d.id === selectedDetection ? { ...d, mcintosh } : d));
+        }
+
+      } catch (err) {
+        console.error("Classification inference error:", err);
+      } finally {
+        setLoadingInference(false);
+      }
+    };
+
+    runInference();
+  }, [selectedDetection, selectedData, image, viewBox, inferenceResults, setDetections, detections]);
+
+  const currentResult = selectedDetection ? inferenceResults[selectedDetection] : null;
+
+  // Split McIntosh string into Z, P, C
+  const mcZ = selectedData?.mcintosh?.[0] || "";
+  const mcP = selectedData?.mcintosh?.[1] || "";
+  const mcC = selectedData?.mcintosh?.[2] || "";
+
+  const zi = currentResult?.classes.Z.indexOf(mcZ) ?? -1;
+  const pi = currentResult?.classes.P.indexOf(mcP) ?? -1;
+  const ci = currentResult?.classes.C.indexOf(mcC) ?? -1;
+
+  const { condP, condC } = currentResult 
+    ? getConditionedProbs(currentResult.pZ, currentResult.pP, currentResult.pC, currentResult.validMask, zi !== -1 ? zi : null, pi !== -1 ? pi : null)
+    : { condP: [], condC: [] };
+
   return (
     <div className="p-4 sm:p-6 lg:p-8 h-full flex flex-col bg-slate-50">
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 flex-1">
@@ -1019,10 +1105,21 @@ function ClassificationTab({ image, detections, setDetections, selectedDetection
                 onClick={() => setSelectedDetection(d.id)}
                 className={cn(
                   "aspect-square bg-black rounded-lg overflow-hidden border-2 cursor-pointer transition-all relative group flex items-center justify-center",
-                  selectedDetection === d.id ? "border-slate-800 shadow-md ring-2 ring-slate-800/20" : "border-slate-200 hover:border-slate-400"
+                  selectedDetection === d.id 
+                    ? "border-emerald-500 ring-4 ring-emerald-500/30 shadow-[0_0_20px_rgba(16,185,129,0.5)] z-10 scale-[1.02]" 
+                    : "border-slate-200 hover:border-slate-400"
                 )}
               >
                 <CropImage imageSrc={image} detection={d} viewBox={viewBox} />
+                
+                {/* Loading Overlay */}
+                {loadingInference && selectedDetection === d.id && (
+                  <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 animate-in fade-in duration-200">
+                    <Loader2 className="h-6 w-6 text-white animate-spin" />
+                    <span className="text-[10px] font-black text-white uppercase tracking-tighter">Analizando</span>
+                  </div>
+                )}
+
                 <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-sm p-2 text-center opacity-0 group-hover:opacity-100 transition-opacity">
                   <span className="text-[10px] font-bold text-white block">UUID: {d.id.toString(16).slice(-4)}</span>
                 </div>
@@ -1051,44 +1148,175 @@ function ClassificationTab({ image, detections, setDetections, selectedDetection
                   </div>
                 </div>
 
-                <div className="space-y-2 p-3 bg-slate-50 rounded-lg border border-slate-100">
-                  <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
-                    <Activity className="h-3 w-3" /> Recomendaciones ConvNextV2
-                  </p>
-                  <div className="flex flex-wrap gap-2 pt-1">
-                    {["Dkc (92%)", "Dko (7%)", "Cki (1%)"].map((rec, i) => (
-                      <span key={rec} className={cn("px-2.5 py-1 rounded text-xs font-bold", i === 0 ? "bg-emerald-100 text-emerald-700 border border-emerald-200" : "bg-white border border-slate-200 text-slate-500")}>
-                        {rec}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Confirmar Clase McIntosh</label>
-                    <select
-                      value={selectedData.mcintosh || "Axx"}
-                      onChange={(e) => setDetections(detections.map((d: any) => d.id === selectedDetection ? { ...d, mcintosh: e.target.value } : d))}
-                      className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-slate-700 transition-all"
-                    >
-                      {MCINTOSH_CLASSES.map(cls => (
-                        <option key={cls} value={cls}>{cls}</option>
-                      ))}
-                    </select>
+                  <div className="space-y-2 p-3 bg-slate-50 rounded-lg border border-slate-100">
+                    <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex items-center gap-1.5">
+                      <Activity className="h-3 w-3" /> Recomendaciones ConvNextV2 (Conf. Global)
+                    </p>
+                    {loadingInference ? (
+                      <div className="flex items-center gap-2 py-1">
+                        <Loader2 className="h-3 w-3 animate-spin text-slate-400" />
+                        <span className="text-[10px] font-bold text-slate-400">Analizando...</span>
+                      </div>
+                    ) : currentResult ? (
+                      <div className="flex flex-wrap gap-2 pt-1">
+                        {(() => {
+                          const { pZ, pP, pC, validMask, classes } = currentResult;
+                          const recommendations = [];
+                          
+                          // Top 3 combinations
+                          const combos: { mc: string, prob: number }[] = [];
+                          for (let zi = 0; zi < 7; zi++) {
+                            for (let pi = 0; pi < 6; pi++) {
+                              for (let ci = 0; ci < 4; ci++) {
+                                if (validMask[zi * 24 + pi * 4 + ci] === 1) {
+                                  // Simplified joint prob as product
+                                  const prob = pZ[zi] * pP[pi] * pC[ci];
+                                  combos.push({ mc: `${classes.Z[zi]}${classes.P[pi]}${classes.C[ci]}`, prob });
+                                }
+                              }
+                            }
+                          }
+                          combos.sort((a, b) => b.prob - a.prob);
+                          
+                          return combos.slice(0, 3).map((c, i) => (
+                            <button
+                              key={c.mc}
+                              onClick={() => setDetections(detections.map((d: any) => d.id === selectedDetection ? { ...d, mcintosh: c.mc } : d))}
+                              className={cn(
+                                "px-2.5 py-1 rounded text-[11px] font-bold transition-all shadow-sm", 
+                                selectedData.mcintosh === c.mc 
+                                  ? "bg-emerald-600 text-white shadow-emerald-200" 
+                                  : "bg-white border border-slate-200 text-slate-600 hover:border-slate-400"
+                              )}
+                            >
+                              {c.mc} ({(c.prob * 100).toFixed(0)}%)
+                            </button>
+                          ));
+                        })()}
+                      </div>
+                    ) : (
+                      <span className="text-[10px] text-slate-400 italic">No hay datos de inferencia</span>
+                    )}
                   </div>
 
-                  <div className="space-y-2">
-                    <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Clasificación Magnética (Opcional)</label>
-                    <select
-                      value={selectedData.mag_class || "None"}
-                      onChange={(e) => setDetections(detections.map((d: any) => d.id === selectedDetection ? { ...d, mag_class: e.target.value } : d))}
-                      className="w-full bg-white border border-slate-200 rounded-md px-3 py-2.5 text-sm font-bold text-slate-900 outline-none focus:border-slate-700 transition-all"
-                    >
-                      {MAGNETIC_CLASSES.map(cls => (
-                        <option key={cls} value={cls}>{cls}</option>
-                      ))}
-                    </select>
+                  <div className="grid grid-cols-1 gap-4">
+                    {/* Character Z */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex justify-between">
+                        Carácter Z (Tipo de Grupo)
+                        {currentResult && <span className="text-emerald-600">{(currentResult.pZ[zi] * 100 || 0).toFixed(1)}% conf. Z</span>}
+                      </label>
+                      <div className="flex flex-wrap gap-1">
+                        {currentResult?.classes.Z.map((char: string, idx: number) => (
+                          <button
+                            key={char}
+                            onClick={() => {
+                              const newMc = char + "xx"; // Reset others on Z change
+                              setDetections(detections.map((d: any) => d.id === selectedDetection ? { ...d, mcintosh: newMc } : d));
+                            }}
+                            className={cn(
+                              "h-9 w-9 flex items-center justify-center rounded-md text-xs font-black transition-all border shadow-sm",
+                              mcZ === char 
+                                ? "bg-slate-900 text-white border-slate-900 shadow-lg scale-110 z-10" 
+                                : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+                            )}
+                          >
+                            {char}
+                          </button>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Character P */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex justify-between">
+                        Carácter P (Penumbras)
+                        {currentResult && zi !== -1 && <span className="text-emerald-600">{(condP[pi] * 100 || 0).toFixed(1)}% conf. P</span>}
+                      </label>
+                      <div className="flex flex-wrap gap-1">
+                        {currentResult?.classes.P.map((char: string, idx: number) => {
+                          const isValid = currentResult.validMask.slice(zi * 24 + idx * 4, zi * 24 + idx * 4 + 4).some((v: number) => v === 1);
+                          return (
+                            <button
+                              key={char}
+                              disabled={!isValid || zi === -1}
+                              onClick={() => {
+                                const newMc = mcZ + char + "x";
+                                setDetections(detections.map((d: any) => d.id === selectedDetection ? { ...d, mcintosh: newMc } : d));
+                              }}
+                              className={cn(
+                                "h-9 w-9 flex items-center justify-center rounded-md text-xs font-black transition-all border shadow-sm",
+                                mcP === char 
+                                  ? "bg-slate-900 text-white border-slate-900 shadow-lg scale-110 z-10" 
+                                  : !isValid || zi === -1
+                                  ? "bg-slate-50 text-slate-200 border-slate-100 cursor-not-allowed opacity-50"
+                                  : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+                              )}
+                            >
+                              {char}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    {/* Character C */}
+                    <div className="space-y-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest flex justify-between">
+                        Carácter C (Distribución)
+                        {currentResult && zi !== -1 && pi !== -1 && <span className="text-emerald-600">{(condC[ci] * 100 || 0).toFixed(1)}% conf. C</span>}
+                      </label>
+                      <div className="flex flex-wrap gap-1">
+                        {currentResult?.classes.C.map((char: string, idx: number) => {
+                          const isValid = currentResult.validMask[zi * 24 + pi * 4 + idx] === 1;
+                          return (
+                            <button
+                              key={char}
+                              disabled={!isValid || pi === -1}
+                              onClick={() => {
+                                const newMc = mcZ + mcP + char;
+                                setDetections(detections.map((d: any) => d.id === selectedDetection ? { ...d, mcintosh: newMc } : d));
+                              }}
+                              className={cn(
+                                "h-9 w-9 flex items-center justify-center rounded-md text-xs font-black transition-all border shadow-sm",
+                                mcC === char 
+                                  ? "bg-slate-900 text-white border-slate-900 shadow-lg scale-110 z-10" 
+                                  : !isValid || pi === -1
+                                  ? "bg-slate-50 text-slate-200 border-slate-100 cursor-not-allowed opacity-50"
+                                  : "bg-white text-slate-600 border-slate-200 hover:border-slate-400"
+                              )}
+                            >
+                              {char}
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div className="space-y-2 pt-2">
+                      <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Clasificación Magnética (Opcional)</label>
+                      <select
+                        value={selectedData.mag_class || "None"}
+                        onChange={(e) => setDetections(detections.map((d: any) => d.id === selectedDetection ? { ...d, mag_class: e.target.value } : d))}
+                        className="w-full bg-white border border-slate-200 rounded-md px-3 py-2 text-sm font-bold text-slate-900 outline-none focus:border-slate-700 transition-all shadow-sm"
+                      >
+                        {MAGNETIC_CLASSES.map(cls => (
+                          <option key={cls} value={cls}>{cls}</option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* Technical Note */}
+                    <div className="mt-4 p-3 bg-slate-50 rounded-lg border border-slate-100 shadow-sm">
+                      <h5 className="text-[10px] font-black text-slate-700 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                        <AlertCircle className="h-3 w-3 text-slate-400" /> Nota de Configuración
+                      </h5>
+                      <p className="text-[10px] leading-relaxed text-slate-500 font-medium">
+                        Los niveles de confianza para cada carácter (Z, P, C) se calculan mediante una máscara de validación jerárquica desfragmentada de las 60 clases McIntosh originales. 
+                        El modelo <strong>ConvNextV2</strong> permite generar tanto una recomendación global como asistencia específica para cada paso del etiquetado, bloqueando automáticamente combinaciones inexistentes para asegurar la integridad científica del registro.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>

@@ -1,0 +1,129 @@
+{
+  "model_name": "convnextv2_tiny.fcmae_ft_in22k_in1k",
+  "input_shape": [
+    1,
+    3,
+    224,
+    224
+  ],
+  "input_layout": "NCHW",
+  "input_dtype": "float32",
+  "normalization": {
+    "mean": [
+      0.485,
+      0.456,
+      0.406
+    ],
+    "std": [
+      0.229,
+      0.224,
+      0.225
+    ],
+    "resize": [
+      224,
+      224
+    ]
+  },
+  "outputs": {
+    "logits_z": 7,
+    "logits_p": 6,
+    "logits_c": 4
+  },
+  "classes": {
+    "Z": [
+      "A",
+      "B",
+      "C",
+      "D",
+      "E",
+      "F",
+      "H"
+    ],
+    "P": [
+      "a",
+      "h",
+      "k",
+      "r",
+      "s",
+      "x"
+    ],
+    "C": [
+      "c",
+      "i",
+      "o",
+      "x"
+    ]
+  },
+  "valid_combinations": [
+    "Dkc",
+    "Cao",
+    "Cso",
+    "Cro",
+    "Hax",
+    "Dao",
+    "Dac",
+    "Dko",
+    "Dai",
+    "Dro",
+    "Eao",
+    "Ehi",
+    "Hsx",
+    "Dso",
+    "Bxi",
+    "Eai",
+    "Hrx",
+    "Fkc",
+    "Ekc",
+    "Bxo",
+    "Eso",
+    "Cai",
+    "Cho",
+    "Eki",
+    "Eac",
+    "Eko",
+    "Csi",
+    "Ero",
+    "Hhx",
+    "Dho",
+    "Axx",
+    "Cko",
+    "Dki",
+    "Dhi",
+    "Eri",
+    "Hkx",
+    "Fho",
+    "Fko",
+    "Dsi",
+    "Eho",
+    "Esi",
+    "Cri",
+    "Ehc",
+    "Dsc",
+    "Dri",
+    "Fai",
+    "Fhc",
+    "Fhi",
+    "Cki",
+    "Fki",
+    "Esc",
+    "Fao",
+    "Dhc",
+    "Fsc",
+    "Fso",
+    "Fac",
+    "Fsi",
+    "Hso",
+    "Chi"
+  ],
+  "valid_mask_shape": [
+    7,
+    6,
+    4
+  ],
+  "recommendation_hierarchy": {
+    "level_1": "Z with P(Z|x)",
+    "level_2": "P under each fixed Z, normalized over valid ZP pairs for that Z",
+    "level_3": "C under each fixed ZP, normalized over valid ZPC triads for that ZP"
+  },
+  "joint_probability_note": "La recomendacion se reconstruye jerarquicamente fuera del ONNX. Primero Z, luego P condicionado o reescalado con Z fijo, y luego C restringido o reescalado con ZP fijo usando valid_mask."
+}
