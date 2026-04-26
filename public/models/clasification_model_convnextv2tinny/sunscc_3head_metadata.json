@@ -1,5 +1,5 @@
 {
-  "model_name": "convnextv2_nano.fcmae_ft_in22k_in1k",
+  "model_name": "convnextv2_atto.fcmae_ft_in1k",
   "input_shape": [
     1,
     3,
