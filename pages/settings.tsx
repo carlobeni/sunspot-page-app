@@ -100,7 +100,7 @@ export default function SettingsPage() {
   };
 
   return (
-    <div className="p-5 pt-24 lg:p-12 max-w-screen-2xl mx-auto min-h-screen bg-slate-50 text-slate-900">
+    <div className="p-4 pt-20 lg:p-8 lg:pt-24 max-w-screen-2xl mx-auto min-h-screen flex flex-col bg-slate-50 text-slate-900">
       {/* Modals Overlay */}
       {modalType && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/20 backdrop-blur-sm animate-in fade-in duration-300">
@@ -192,22 +192,22 @@ export default function SettingsPage() {
       )}
 
       {/* Header */}
-      <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-4">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
-          <h1 className="text-xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
-            <SettingsIcon className="h-6 w-6 md:h-8 md:w-8 text-slate-800" />
-            Configuración
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-3 tracking-tight">
+            <SettingsIcon className="h-7 w-7 text-slate-800 shrink-0" strokeWidth={1.5} />
+            Configuración de Sistema
           </h1>
-          <p className="text-slate-500 mt-1.5 text-sm md:text-base font-medium max-w-xl hidden md:block">
-            Gestión de conectividad y acceso al sistema.
+          <p className="text-slate-500 mt-2 text-sm font-medium hidden sm:block">
+            Gestión de <span className="text-slate-900 font-bold">conectividad, acceso y perfiles</span> de usuario.
           </p>
         </div>
         <button
           onClick={handleSave}
           disabled={isSaving}
-          className="flex items-center justify-center gap-2 px-6 py-2.5 rounded-md bg-slate-800 hover:bg-slate-900 text-white font-semibold text-sm transition-all w-full md:w-auto shadow-sm"
+          className="flex items-center justify-center gap-3 px-8 py-3 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-black uppercase tracking-widest transition-all w-full md:w-auto shadow-xl shadow-slate-200"
         >
-          {isSaving ? <div className="h-4 w-4 border-2 border-slate-200 border-t-white rounded-sm animate-spin" /> : <Save className="h-4 w-4" />}
+          {isSaving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
           {isSaving ? "Guardando..." : "Guardar Cambios"}
         </button>
       </div>
@@ -225,13 +225,13 @@ export default function SettingsPage() {
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "flex items-center gap-3 px-4 py-3 rounded-md text-sm font-semibold transition-all whitespace-nowrap",
+                  "flex items-center gap-3 px-6 py-3 rounded-xl text-xs font-black uppercase tracking-widest transition-all whitespace-nowrap",
                   activeTab === tab.id
-                    ? "bg-slate-100 text-slate-900 shadow-sm border border-slate-200"
-                    : "text-slate-600 hover:bg-white hover:text-slate-900 border border-transparent"
+                    ? "bg-slate-900 text-white shadow-xl scale-[1.02]"
+                    : "text-slate-500 hover:bg-white hover:text-slate-900 border border-transparent"
                 )}
               >
-                <Icon className={cn("h-4 w-4", activeTab === tab.id ? "text-slate-800" : "text-slate-400")} />
+                <Icon className={cn("h-4 w-4", activeTab === tab.id ? "text-emerald-400" : "text-slate-400")} />
                 {tab.name}
               </button>
             );
@@ -320,7 +320,7 @@ export default function SettingsPage() {
                               </span>
                             </div>
                             {net.connected ? (
-                              <span className="text-xs font-semibold text-emerald-700 bg-emerald-50 px-3 py-1.5 rounded-full border border-emerald-200 shadow-sm">
+                              <span className="text-[10px] font-black text-white bg-emerald-500 px-4 py-1.5 rounded-full shadow-lg shadow-emerald-200 uppercase tracking-widest">
                                 Conectado
                               </span>
                             ) : (

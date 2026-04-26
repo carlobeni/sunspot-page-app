@@ -134,11 +134,11 @@ export default function TrendsPage() {
         <title>Tendencia | Plataforma de Investigación Solar</title>
       </Head>
       {/* Header */}
-      <div className="mb-8 flex flex-col gap-4 border-b border-slate-200 pb-6">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
           <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-3 tracking-tight">
             <TrendingUp className="h-7 w-7 text-slate-800 shrink-0" strokeWidth={1.5} />
-            Tendencia
+            Tendencia de Actividad
           </h1>
           <p className="text-slate-500 mt-2 text-sm font-medium hidden sm:block max-w-2xl">
             Análisis y proyección de la actividad fotosférica basado en <span className="text-slate-900 font-bold">registros históricos y modelos generativos</span>.
@@ -194,7 +194,7 @@ export default function TrendsPage() {
              <div className="w-2 h-2 rounded-full bg-slate-800" />
              Número de Manchas Solares (SSN)
           </h3>
-          <span className="px-3 py-1 bg-slate-50 text-[10px] font-bold text-slate-500 rounded border border-slate-100 uppercase tracking-widest">Modelo de Regresión</span>
+          <span className="px-3 py-1 bg-slate-50 text-[10px] font-bold text-slate-500 rounded border border-slate-100 uppercase tracking-widest">Filtro de Kalman</span>
         </div>
         
         {!mounted || forecastLoading || !renderSsn ? <ChartSkeleton height={400} text="Generando Serie SSN..." /> : (
@@ -215,10 +215,10 @@ export default function TrendsPage() {
                 <Legend verticalAlign="top" align="right" height={40} iconType="circle"
                   wrapperStyle={{ fontSize: "10px", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 800, paddingBottom: "20px" }} />
                 <Line isAnimationActive={false} type="monotone" dataKey="historySsn" name="Histórico" stroke="#cbd5e1" strokeWidth={3} dot={false} strokeOpacity={0.6} />
-                <Line isAnimationActive={false} type="monotone" dataKey="hathawaySSN" name="Filtro Kalman" stroke="#1e293b" strokeWidth={3} dot={false} strokeDasharray="8 6" />
+                <Line isAnimationActive={false} type="monotone" dataKey="hathawaySSN" name="Modelo Generativo" stroke="#10b981" strokeWidth={3} dot={false} strokeDasharray="8 6" />
                 {predictions[monthIdx]?.yearFloat != null && (
-                  <ReferenceLine x={predictions[monthIdx].yearFloat} stroke="#1e293b" strokeWidth={1} strokeDasharray="4 4"
-                    label={{ value: predictions[monthIdx].month, position: "top", fill: "#1e293b", fontSize: 9, fontWeight: "900" }} />
+                  <ReferenceLine x={predictions[monthIdx].yearFloat} stroke="#10b981" strokeWidth={1} strokeDasharray="4 4"
+                    label={{ value: predictions[monthIdx].month, position: "top", fill: "#10b981", fontSize: 9, fontWeight: "900" }} />
                 )}
               </ComposedChart>
              </ResponsiveContainer>
@@ -227,10 +227,10 @@ export default function TrendsPage() {
       </div>
 
       {/* Butterfly Diagram */}
-      <div className="mt-6 bg-white p-4 lg:p-8 rounded-xl border border-slate-200 shadow-sm min-h-[400px] mb-12">
-        <h3 className="text-sm font-bold text-slate-500 mb-1 flex items-center justify-between uppercase tracking-widest">
+      <div className="mt-6 bg-white p-4 lg:p-8 rounded-xl border border-slate-200 shadow-sm min-h-[400px]">
+        <h3 className="text-[10px] font-black text-slate-400 mb-1 flex items-center justify-between uppercase tracking-[0.2em]">
           <span>Distribución Latitudinal (Spörer)</span>
-          <MapIcon className="h-5 w-5 opacity-40 text-slate-800" />
+          <MapIcon className="h-5 w-5 opacity-40 text-emerald-600" />
         </h3>
         
         {!mounted || forecastLoading || !renderButterfly ? <ChartSkeleton height={400} text="Mapeando Latitudes..." /> : (
@@ -244,7 +244,7 @@ export default function TrendsPage() {
                 <YAxis dataKey="lat" hide={true} domain={[-50, 50]} />
                 <ZAxis dataKey="area" range={[2, 12]} />
                 <Tooltip
-                  cursor={{ strokeDasharray: "3 3", stroke: "#94a3b8" }}
+                  cursor={{ strokeDasharray: "3 3", stroke: "#10b981" }}
                   contentStyle={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", color: "#0f172a", borderRadius: "12px", boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)", padding: "12px" }}
                   itemStyle={{ fontWeight: "bold", fontSize: "12px" }}
                   labelStyle={{ fontWeight: "800", color: "#1e293b", marginBottom: "4px" }}
@@ -254,15 +254,52 @@ export default function TrendsPage() {
                 <Legend verticalAlign="top" height={40} iconType="circle"
                   wrapperStyle={{ fontSize: "11px", textTransform: "uppercase", letterSpacing: "0.1em", fontWeight: 800, paddingBottom: "20px" }} />
                 {predictions[monthIdx]?.yearFloat != null && (
-                  <ReferenceLine x={predictions[monthIdx].yearFloat} stroke="#64748b" strokeWidth={2} strokeDasharray="4 4"
-                    label={{ value: predictions[monthIdx].month, position: "top", fill: "#334155", fontSize: 10, fontWeight: "bold" }} />
+                  <ReferenceLine x={predictions[monthIdx].yearFloat} stroke="#10b981" strokeWidth={2} strokeDasharray="4 4"
+                    label={{ value: predictions[monthIdx].month, position: "top", fill: "#059669", fontSize: 10, fontWeight: "bold" }} />
                 )}
                 <Scatter isAnimationActive={false} name="Registros Históricos" data={butterflyHistorical} fill="#94a3b8" fillOpacity={0.4} />
-                <Scatter isAnimationActive={false} name="Modelo Generativo" data={butterflyForecast} fill="#1e293b" fillOpacity={0.7} />
+                <Scatter isAnimationActive={false} name="Modelo Generativo" data={butterflyForecast} fill="#10b981" fillOpacity={0.7} />
               </ScatterChart>
             </div>
           </div>
         )}
+      </div>
+
+      {/* Scientific References Section */}
+      <div className="mt-12 mb-20 p-8 bg-slate-900 text-white rounded-2xl shadow-2xl relative overflow-hidden group">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-emerald-500/10 rounded-full -translate-y-32 translate-x-32 blur-3xl group-hover:bg-emerald-500/20 transition-colors duration-1000" />
+        <div className="relative z-10">
+          <h3 className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.4em] mb-8 flex items-center gap-3">
+            <div className="w-2 h-2 rounded-full bg-emerald-500 shadow-[0_0_10px_#10b981]" />
+            Base Científica y Referencias
+          </h3>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-12">
+            <div className="space-y-4">
+              <h4 className="text-sm font-black text-slate-100 flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                Análisis SSN (Kalman Filter)
+              </h4>
+              <p className="text-xs text-slate-400 leading-relaxed font-medium">
+                La proyección del número de manchas solares se basa en el modelo de filtro de Kalman adaptativo, optimizado para la predicción de series temporales solares no lineales.
+              </p>
+              <p className="text-[10px] font-mono text-emerald-500/80 bg-emerald-500/5 p-3 rounded-lg border border-emerald-500/10">
+                Podladchikova, T., & Van der Linden, R. A. M. (2012). A Kalman Filter for Sunspot Number Series Analysis and Prediction. Solar Physics.
+              </p>
+            </div>
+            <div className="space-y-4">
+              <h4 className="text-sm font-black text-slate-100 flex items-center gap-2">
+                <div className="w-1.5 h-1.5 rounded-full bg-slate-400" />
+                Distribución Latitudinal
+              </h4>
+              <p className="text-xs text-slate-400 leading-relaxed font-medium">
+                La ley de Spörer y la migración latitudinal del ciclo solar siguen las caracterizaciones cinemáticas y observacionales descritas por Hathaway.
+              </p>
+              <p className="text-[10px] font-mono text-emerald-500/80 bg-emerald-500/5 p-3 rounded-lg border border-emerald-500/10">
+                Hathaway, D. H. (2010). The Solar Cycle. Living Reviews in Solar Physics.
+              </p>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

@@ -18,19 +18,19 @@ const GithubIcon = ({ className }: { className?: string }) => (
 
 export default function InfoPage() {
   return (
-    <div className="p-4 pt-20 lg:p-12 max-w-screen-xl mx-auto min-h-screen bg-slate-50 text-slate-900">
+    <div className="p-4 pt-20 lg:p-8 lg:pt-24 max-w-screen-2xl mx-auto min-h-screen flex flex-col bg-slate-50 text-slate-900">
       <Head>
         <title>Información | Plataforma de Investigación Solar</title>
       </Head>
       {/* Header */}
-      <div className="mb-12 border-b border-slate-200 pb-8 flex flex-col md:flex-row md:items-end justify-between gap-4">
+      <div className="mb-8 border-b border-slate-200 pb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4">
         <div>
-          <h1 className="text-2xl md:text-4xl font-bold text-slate-900 flex items-center gap-3 tracking-tight">
-             <Info className="h-7 w-7 md:h-9 md:w-9 text-slate-800" />
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-3 tracking-tight">
+             <Info className="h-7 w-7 text-slate-800 shrink-0" strokeWidth={1.5} />
              Información del Proyecto
           </h1>
-          <p className="text-slate-500 mt-3 text-sm md:text-base font-medium max-w-xl">
-            Especificaciones técnicas, arquitectura de hardware y marcos institucionales de desarrollo.
+          <p className="text-slate-500 mt-2 text-sm font-medium hidden sm:block max-w-xl">
+            Especificaciones técnicas, arquitectura de hardware y marcos institucionales de <span className="text-slate-900 font-bold">desarrollo del prototipo</span>.
           </p>
         </div>
       </div>
@@ -38,12 +38,12 @@ export default function InfoPage() {
       <div className="space-y-12">
         {/* System Specifications Section */}
         <section className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8 lg:p-12 relative overflow-hidden group">
-          <div className="absolute top-0 right-0 p-8 opacity-[0.03] pointer-events-none">
-             <Cpu className="h-32 w-32 text-slate-900" />
+          <div className="absolute top-0 right-0 p-8 opacity-[0.05] pointer-events-none">
+             <Cpu className="h-32 w-32 text-emerald-600" />
           </div>
-          <div className="flex items-center gap-3 pb-6 border-b border-slate-100 mb-10">
-             <Server className="h-6 w-6 text-slate-800" />
-             <h2 className="text-xl font-bold text-slate-900 uppercase tracking-widest text-xs">Especificaciones Técnicas</h2>
+          <div className="flex items-center gap-4 pb-8 border-b border-slate-50 mb-10">
+             <Server className="h-6 w-6 text-emerald-500" />
+             <h2 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.4em]">Especificaciones Técnicas</h2>
           </div>
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
             <div className="space-y-1">
@@ -69,9 +69,9 @@ export default function InfoPage() {
                href="https://github.com/carlobeni/sunspot-page-app" 
                target="_blank" 
                rel="noopener noreferrer"
-               className="inline-flex items-center gap-3 px-6 py-2.5 bg-slate-50 rounded-lg text-sm text-slate-900 font-bold border border-slate-200 hover:bg-slate-100 transition-all"
+               className="inline-flex items-center gap-4 px-8 py-3 bg-slate-900 text-white rounded-xl text-xs font-black uppercase tracking-widest hover:bg-slate-800 transition-all shadow-xl shadow-slate-200 group"
              >
-               <GithubIcon className="h-5 w-5" />
+               <GithubIcon className="h-5 w-5 group-hover:rotate-12 transition-transform" />
                Repositorio en GitHub
              </a>
           </div>
@@ -131,9 +131,9 @@ export default function InfoPage() {
       </div>
       
       {/* Clean Footer */}
-      <div className="mt-24 pt-12 border-t border-slate-200 text-center">
-        <p className="text-[10px] font-black text-slate-200 uppercase tracking-[0.8em]">
-           Solar Digital System
+      <div className="mt-24 pt-12 border-t border-slate-200 text-center pb-12">
+        <p className="text-[10px] font-black text-slate-200 uppercase tracking-[1em] opacity-50">
+           SunSpot Digital System
         </p>
       </div>
     </div>

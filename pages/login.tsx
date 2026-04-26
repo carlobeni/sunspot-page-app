@@ -7,6 +7,7 @@ import { useState, useTransition } from "react";
 import Head from "next/head";
 import { supabase } from "@/lib/supabase";
 import { checkModelsCached, downloadModelsWithProgress, ModelLoadProgress } from "@/lib/model-loader";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -68,17 +69,19 @@ export default function LoginPage() {
       </Head>
 
       {/* Subtle Background Detail */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
+         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-[radial-gradient(circle,_rgba(16,185,129,0.02)_0%,_transparent_70%)] animate-pulse duration-[8000ms]" />
          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] border border-slate-200 rounded-full opacity-40" />
          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] border border-slate-200 rounded-full opacity-30" />
       </div>
 
       <div className="max-w-md w-full space-y-8 bg-white p-8 sm:p-12 rounded-2xl border border-slate-200 shadow-sm relative z-10">
         <div className="flex flex-col items-center">
-          <h2 className="text-center text-2xl font-bold text-slate-900 tracking-tight">
+          <BrandLogo size={48} className="mb-6" />
+          <h2 className="text-center text-xl font-bold text-slate-900 tracking-tight">
             Acceso a la Plataforma
           </h2>
-          <p className="mt-3 text-center text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">
+          <p className="mt-2 text-center text-xs font-bold text-slate-400 uppercase tracking-[0.2em]">
             Investigación y Análisis Solar
           </p>
         </div>
@@ -195,13 +198,13 @@ export default function LoginPage() {
               <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
                 <div 
                   className="h-full bg-white transition-all duration-300 ease-out"
-                  style={{ width: `${modelProgress?.progress || 0}%` }}
+                  style={{ width: `${modelProgress?.overallProgress || 0}%` }}
                 />
               </div>
               
               <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-[0.2em]">
                 <span className="text-slate-400">{modelProgress?.modelName || "Iniciando..."}</span>
-                <span className="text-white">{Math.round(modelProgress?.progress || 0)}%</span>
+                <span className="text-white">{Math.round(modelProgress?.overallProgress || 0)}%</span>
               </div>
 
               <div className="pt-4">

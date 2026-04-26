@@ -32,6 +32,7 @@ import {
   ClipboardList,
   Lock
 } from "lucide-react";
+import { BrandLogo } from "../components/BrandLogo";
 import SolarDiskViewer from "../components/SolarDiskViewer";
 import { useAuth } from "../lib/AuthContext";
 import html2canvas from "html2canvas";
@@ -220,6 +221,15 @@ export default function RecordsPage() {
             scale: 2,
             useCORS: true,
             backgroundColor: "#ffffff",
+            onclone: (clonedDoc: Document) => {
+              const elements = clonedDoc.getElementsByTagName("*");
+              for (let i = 0; i < elements.length; i++) {
+                const el = elements[i] as HTMLElement;
+                // Force plain colors to avoid oklch parsing errors in html2canvas
+                if (el.classList.contains('bg-slate-900')) el.style.backgroundColor = '#0f172a';
+                if (el.classList.contains('text-emerald-400')) el.style.color = '#10b981';
+              }
+            }
         };
 
         const canvasSummary = await html2canvas(summaryElement, captureOptions);
@@ -351,7 +361,7 @@ export default function RecordsPage() {
                                 "aspect-square flex flex-col items-center justify-center text-xs transition-all relative font-bold h-8 w-8 mx-auto rounded-lg",
                                 hasRecord 
                                     ? isSelected
-                                        ? "bg-slate-900 text-white shadow-md scale-105"
+                                        ? "bg-emerald-500 text-white shadow-lg shadow-emerald-200 scale-105"
                                         : "text-slate-700 hover:bg-slate-100 border border-slate-100"
                                     : "text-slate-200 pointer-events-none"
                             )}
@@ -399,17 +409,18 @@ export default function RecordsPage() {
     <div id="hidden-report-container" className="fixed left-[-9999px] top-0 w-[1024px] z-[-50] bg-white">
         {selectedSolarData && selectedDate && (
             <div className="flex flex-col gap-10 bg-white p-10">
-                <div id="record-report-summary" className="bg-[#ffffff] rounded-xl border border-[#e2e8f0] p-10 flex flex-col text-[#0f172a]">
-                    <div className="flex justify-between border-b border-[#e2e8f0] pb-6 mb-8 gap-4">
-                        <div className="flex items-center gap-2">
-                            <div>
-                                <h2 className="text-xl font-bold text-[#0f172a]">Informe de Registro Heliográfico</h2>
-                                <p className="text-[10px] font-semibold text-[#94a3b8] mt-0.5 uppercase tracking-widest">Plataforma de Investigación Solar</p>
+                <div id="record-report-summary" className="bg-[#ffffff] rounded-xl border border-[#e2e8f0] p-10 flex flex-col text-[#0f172a] w-[800px] mx-auto shrink-0">
+                    <div className="flex justify-between border-b-2 border-[#0f172a] pb-8 mb-10 gap-4 items-end">
+                        <div className="flex items-center gap-4">
+                            <BrandLogo size={60} className="shrink-0" />
+                            <div className="pl-4" style={{ borderLeft: '2px solid #f1f5f9' }}>
+                                <h2 className="text-2xl font-black text-[#0f172a] tracking-tighter uppercase">Informe de Registro</h2>
+                                <p className="text-[10px] font-black text-[#94a3b8] mt-0.5 uppercase tracking-[0.3em]">Plataforma de Investigación Solar</p>
                             </div>
                         </div>
                         <div className="text-right">
-                            <p className="text-[10px] font-black text-[#94a3b8] mb-1 uppercase tracking-widest">Referencia</p>
-                            <p className="text-base font-mono font-bold text-[#0f172a]">REF-{selectedDate.replace(/-/g, "")}-ARCH</p>
+                            <p className="text-[10px] font-black text-[#94a3b8] mb-1 uppercase tracking-widest">Código de Archivo</p>
+                            <p className="text-lg font-mono font-bold text-[#0f172a] tracking-tight">REF-{selectedDate.replace(/-/g, "")}-ARCH</p>
                         </div>
                     </div>
 
@@ -461,20 +472,25 @@ export default function RecordsPage() {
                         </div>
                     </div>
 
-                    <div className="mb-10 p-4 bg-[#f8fafc] rounded-lg border border-[#f1f5f9] space-y-2">
-                        <h4 className="text-[10px] font-black text-[#64748b] uppercase tracking-widest flex items-center gap-2">
-                            <Activity className="h-3 w-3" /> Notas del Archivo
+                </div>
+
+                <div id="record-report-table" className="bg-[#ffffff] rounded-xl border border-[#e2e8f0] p-10 flex flex-col text-[#0f172a] w-[800px] mx-auto shrink-0">
+                    {/* Technical Notes moved here */}
+                    <div className="mb-8 p-6 bg-[#0f172a] text-white rounded-xl shadow-inner relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-10">
+                            <Activity className="h-16 w-16" />
+                        </div>
+                        <h4 className="text-[10px] font-black text-[#10b981] uppercase tracking-[0.3em] flex items-center gap-2 mb-3 relative z-10">
+                            <div className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
+                            Nota de Arquitectura
                         </h4>
-                        <p className="text-xs text-[#475569] leading-relaxed italic">
+                        <p className="text-xs text-[#cbd5e1] leading-relaxed font-medium relative z-10">
                             {isTrainingData 
-                                ? "Este registro corresponde a datos históricos de la NOAA y el SDO. Estos fueron empleados como base de entrenamiento para los modelos YOLO26n y ConvNextV2 utilizados en este sistema."
-                                : "Este registro ha sido generado mediante el proceso de análisis estándar del observatorio, utilizando modelos de visión artificial validados."
+                                ? "Este registro corresponde a datos históricos de la NOAA y el SDO. Estos fueron empleados como base de entrenamiento para los modelos YOLOv26 nano y ConvNextV2 atto jerárquico utilizados en este sistema."
+                                : "Este registro ha sido generado mediante el proceso de análisis estándar del observatorio, utilizando la arquitectura YOLOv26n + ConvNextV2atto."
                             }
                         </p>
                     </div>
-                </div>
-
-                <div id="record-report-table" className="bg-[#ffffff] rounded-xl border border-[#e2e8f0] p-10 flex flex-col text-[#0f172a]">
                     <div className="space-y-4">
                         <h4 className="text-[10px] font-black border-b border-[#f1f5f9] pb-2 flex justify-between items-center text-[#64748b] uppercase tracking-widest">
                             Detalle de Manchas Registradas

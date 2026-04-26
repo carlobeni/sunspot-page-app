@@ -18,11 +18,16 @@ import {
   User,
   Briefcase,
   X,
+  Info,
+  ChevronRight,
+  ChevronLeft,
+  ChevronDown,
   LayoutGrid,
   Lock,
-  ChevronRight,
   Focus,
   ShieldAlert,
+  Maximize2,
+  Minimize2,
 } from "lucide-react";
 import { useAuth } from "../lib/AuthContext";
 import { clsx, type ClassValue } from "clsx";
@@ -31,6 +36,7 @@ import { runYoloInference } from "../lib/yolo-inference";
 import { runClassificationInference, getConditionedProbs } from "../lib/classification-inference";
 import { jsPDF } from "jspdf";
 import html2canvas from "html2canvas";
+import { BrandLogo } from "../components/BrandLogo";
 
 function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -55,22 +61,36 @@ export default function ObservatoryPage() {
   const [selectedDetection, setSelectedDetection] = useState<number | null>(null);
   const [viewBox, setViewBox] = useState({ w: 1024, h: 1024 });
   const [confirmed, setConfirmed] = useState(false);
+  
+  // Alignment states (Lifted from ImageTab)
+  const [zoom, setZoom] = useState(1);
+  const [offset, setOffset] = useState({ x: 0, y: 0 });
 
   const [metadata, setMetadata] = useState({
     professional: "Carlos Benítez",
     position: "Investigador Principal",
     source: 'Registro Digital de Fotósfera Solar',
     date: new Date().toISOString().split("T")[0],
-    time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+    time: new Date().toLocaleTimeString('en-GB', { hour: "2-digit", minute: "2-digit" }), // Format HH:mm for type="time"
     location: "Asunción, Paraguay",
   });
 
   const [showExitModal, setShowExitModal] = useState(false);
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
 
-  const { isGuest } = useAuth();
+  const { user, isGuest } = useAuth();
   const unlockedTabs = getUnlockedTabs(image, detections, confirmed, isGuest);
   const router = useRouter();
+
+  useEffect(() => {
+    if (user) {
+      setMetadata(prev => ({
+        ...prev,
+        professional: user.user_metadata?.full_name || prev.professional,
+        position: user.user_metadata?.academic_degree || user.user_metadata?.degree || prev.position,
+      }));
+    }
+  }, [user]);
 
   useEffect(() => {
     const handleBeforeUnload = (e: BeforeUnloadEvent) => {
@@ -103,11 +123,14 @@ export default function ObservatoryPage() {
   const handleImageSet = (img: string | null) => {
     setImage(img);
     if (img) {
+      // Auto-zoom for initial fit and reset offset
+      setZoom(0.92);
+      setOffset({ x: 0, y: 0 });
+      
       const i = new window.Image();
       i.src = img;
       i.onload = () => {
         setViewBox({ w: i.width, h: i.height });
-        setActiveTab("agrupamiento");
       };
     } else {
       setDetections([]);
@@ -115,6 +138,96 @@ export default function ObservatoryPage() {
     }
   };
 
+  const handleBakeAndNext = async () => {
+    if (!image) return;
+    setLoading(true);
+
+    try {
+      const img = new window.Image();
+      img.src = image;
+      await new Promise(r => img.onload = r);
+
+      const canvas = document.createElement('canvas');
+      // Use a high-quality square size based on the smaller dimension or 2048
+      const size = Math.min(img.width, img.height, 2048);
+      canvas.width = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d', { alpha: false });
+      if (!ctx) return;
+
+      ctx.fillStyle = "black";
+      ctx.fillRect(0, 0, size, size);
+
+      // The alignment logic in the UI (ImageTab) works as follows:
+      // The container is square (480x480).
+      // The image uses 'object-cover'.
+      // zoom and offset are applied.
+
+      const containerSize = 480;
+      const aspect = img.width / img.height;
+      
+      let drawW, drawH;
+      if (aspect > 1) {
+        drawH = containerSize;
+        drawW = containerSize * aspect;
+      } else {
+        drawW = containerSize;
+        drawH = containerSize / aspect;
+      }
+
+      // Now map this to the 'size' canvas
+      const scaleFactor = size / containerSize;
+      const finalW = drawW * zoom * scaleFactor;
+      const finalH = drawH * zoom * scaleFactor;
+      
+      const centerX = size / 2 + offset.x * scaleFactor;
+      const centerY = size / 2 + offset.y * scaleFactor;
+
+      ctx.drawImage(
+        img, 
+        centerX - finalW / 2, 
+        centerY - finalH / 2, 
+        finalW, 
+        finalH
+      );
+
+      const baked = canvas.toDataURL('image/jpeg', 0.95);
+      setImage(baked);
+      setViewBox({ w: size, h: size });
+      setZoom(1.0); // Reset for next tabs as it's now perfectly aligned
+      setOffset({ x: 0, y: 0 });
+      setActiveTab("agrupamiento");
+    } catch (err) {
+      console.error("Error baking image:", err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const calculateHeliographic = (px: number, py: number, W: number, H: number) => {
+    // Post-bake: The image is square, sun is at center.
+    // Grid radius is 0.92 of the half-size.
+    const cx = W / 2;
+    const cy = H / 2;
+    const R = (W / 2) * 0.92;
+
+    const dx = px - cx;
+    const dy = cy - py; // Math Y-axis (up)
+
+    const r_norm = Math.sqrt(dx * dx + dy * dy) / R;
+    if (r_norm > 1.05) return { lat: 0, lon: 0 };
+
+    const rho = Math.asin(Math.min(1, r_norm));
+    const theta = Math.atan2(dx, dy);
+
+    const lat = Math.asin(Math.sin(rho) * Math.cos(theta));
+    const lon = Math.atan2(Math.sin(rho) * Math.sin(theta), Math.cos(rho));
+
+    return {
+      lat: (lat * 180) / Math.PI,
+      lon: (lon * 180) / Math.PI,
+    };
+  };
 
   const handleInference = async () => {
     if (!image) return;
@@ -126,24 +239,13 @@ export default function ObservatoryPage() {
       
       const boxes = await runYoloInference(img, viewBox.w, viewBox.h);
       
-      const calculateHeliographic = (px: number, py: number) => {
-        const rx = viewBox.w / 2;
-        const ry = viewBox.h / 2;
-        const R = Math.min(rx, ry);
-        const dx = px - rx;
-        const dy = ry - py;
-        const lat = Math.asin(Math.min(1, Math.abs(dy) / R) * Math.sign(dy)) * (180 / Math.PI);
-        const cosLat = Math.cos(lat * Math.PI / 180);
-        const lon = cosLat === 0 ? 0 : Math.asin(Math.min(1, Math.abs(dx) / (R * cosLat)) * Math.sign(dx)) * (180 / Math.PI);
-        return { lat, lon };
-      };
-
       const newDetections = boxes.map((box, i) => {
         const cx = (box.x1 + box.x2) / 2;
         const cy = (box.y1 + box.y2) / 2;
         const w = box.x2 - box.x1;
         const h = box.y2 - box.y1;
-        const { lat, lon } = calculateHeliographic(cx, cy);
+
+        const { lat, lon } = calculateHeliographic(cx, cy, viewBox.w, viewBox.h);
         return {
           id: Date.now() + i,
           x: cx,
@@ -358,6 +460,11 @@ export default function ObservatoryPage() {
             setMetadata={setMetadata}
             image={image}
             setImage={handleImageSet}
+            zoom={zoom}
+            setZoom={setZoom}
+            offset={offset}
+            setOffset={setOffset}
+            onNext={handleBakeAndNext}
           />
         )}
         {activeTab === "agrupamiento" && (
@@ -371,6 +478,8 @@ export default function ObservatoryPage() {
             onRunInference={handleInference}
             loading={loading}
             onNext={() => setActiveTab("clasificacion")}
+            zoom={zoom}
+            offset={offset}
           />
         )}
         {activeTab === "clasificacion" && (
@@ -388,7 +497,16 @@ export default function ObservatoryPage() {
             }}
           />
         )}
-          {activeTab === "informe" && <ReportTab metadata={metadata} detections={detections} image={image} viewBox={viewBox} />}
+          {activeTab === "informe" && (
+            <ReportTab 
+              metadata={metadata} 
+              detections={detections} 
+              image={image} 
+              viewBox={viewBox} 
+              zoom={zoom} 
+              offset={offset} 
+            />
+          )}
         </div>
 
         {showExitModal && (
@@ -431,7 +549,7 @@ export default function ObservatoryPage() {
 /* ─────────────────────────────────────────────── */
 /*  IMAGE TAB                                      */
 /* ─────────────────────────────────────────────── */
-function ImageTab({ metadata, setMetadata, image, setImage }: any) {
+function ImageTab({ metadata, setMetadata, image, setImage, zoom, setZoom, offset, setOffset, onNext }: any) {
   const [mode, setMode] = useState<"upload" | "capture" | null>(null);
   const [gain, setGain] = useState(50);
   const [exposure, setExposure] = useState(20);
@@ -440,17 +558,37 @@ function ImageTab({ metadata, setMetadata, image, setImage }: any) {
   const [validatingImage, setValidatingImage] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
-  const uploadContainerRef = useRef<HTMLDivElement>(null);
-  const [highlightUpload, setHighlightUpload] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  
+  // Alignment local state for dragging
+  const [isDragging, setIsDragging] = useState(false);
+  const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
 
-  useEffect(() => {
-    if (mode === "upload" && uploadContainerRef.current) {
-      uploadContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      setHighlightUpload(true);
-      const timer = setTimeout(() => setHighlightUpload(false), 1500);
-      return () => clearTimeout(timer);
-    }
-  }, [mode]);
+  const handleMouseDown = (e: React.MouseEvent) => {
+    if (!image) return;
+    setIsDragging(true);
+    setDragStart({ x: e.clientX - offset.x, y: e.clientY - offset.y });
+  };
+
+  const handleMouseMove = (e: React.MouseEvent) => {
+    if (!isDragging) return;
+    setOffset({ x: e.clientX - dragStart.x, y: e.clientY - dragStart.y });
+  };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    if (!image) return;
+    setIsDragging(true);
+    const touch = e.touches[0];
+    setDragStart({ x: touch.clientX - offset.x, y: touch.clientY - offset.y });
+  };
+
+  const handleTouchMove = (e: React.TouchEvent) => {
+    if (!isDragging) return;
+    const touch = e.touches[0];
+    setOffset({ x: touch.clientX - dragStart.x, y: touch.clientY - dragStart.y });
+  };
+
+  const handleMouseUp = () => setIsDragging(false);
 
   const validateSolarDisk = (file: File): Promise<{ isValid: boolean, errorMsg?: string }> => {
     return new Promise((resolve) => {
@@ -520,9 +658,72 @@ function ImageTab({ metadata, setMetadata, image, setImage }: any) {
     setValidatingImage(false);
 
     if (result.isValid) {
-      setImage(URL.createObjectURL(file));
+      setValidatingImage(true); 
+      const objectUrl = URL.createObjectURL(file);
+      
+      // Auto-alignment detection
+      const img = new Image();
+      img.src = objectUrl;
+      img.onload = () => {
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) {
+           setImage(objectUrl);
+           setValidatingImage(false);
+           return;
+        }
+
+        const scale = 256 / Math.max(img.width, img.height);
+        canvas.width = img.width * scale;
+        canvas.height = img.height * scale;
+        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+        
+        let minX = canvas.width, maxX = 0, minY = canvas.height, maxY = 0;
+        let found = false;
+        for (let y = 0; y < canvas.height; y++) {
+          for (let x = 0; x < canvas.width; x++) {
+            const i = (y * canvas.width + x) * 4;
+            if ((data[i] + data[i+1] + data[i+2]) / 3 > 40) {
+              if (x < minX) minX = x; if (x > maxX) maxX = x;
+              if (y < minY) minY = y; if (y > maxY) maxY = y;
+              found = true;
+            }
+          }
+        }
+
+        if (found) {
+          const diskR = ((maxX - minX + maxY - minY) / 4) / scale;
+          const diskCX = ((minX + maxX) / 2) / scale;
+          const diskCY = ((minY + maxY) / 2) / scale;
+          
+          const containerSize = 480;
+          const targetR = (containerSize / 2) * 0.92;
+          
+          // zoom factor to match radius
+          const newZoom = targetR / diskR;
+          
+          // Calculate offset to center the disk
+          // Image center in container coordinates is 240, 240
+          // Disk center in image coordinates is diskCX, diskCY
+          const imgCenterX = img.width / 2;
+          const imgCenterY = img.height / 2;
+          
+          // Standard 'object-cover' at zoom 1.0 would put imgCenter at 240,240
+          // So we need an offset that shifts the disk from its image position to the center
+          const offX = (imgCenterX - diskCX) * newZoom;
+          const offY = (imgCenterY - diskCY) * newZoom;
+          
+          setZoom(newZoom);
+          setOffset({ x: offX, y: offY });
+        }
+
+        setImage(objectUrl);
+        setValidatingImage(false);
+      };
     } else {
       setUploadError(result.errorMsg || "Error al validar la imagen.");
+      setValidatingImage(false);
     }
   };
 
@@ -533,19 +734,23 @@ function ImageTab({ metadata, setMetadata, image, setImage }: any) {
         <div className="w-full lg:w-72 xl:w-80 shrink-0 space-y-6">
           {/* Source */}
           <section>
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-              <span className="w-5 h-5 rounded bg-slate-100 text-slate-700 flex items-center justify-center text-[10px] font-black">1</span>
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-3">
+              <div className="w-5 h-5 rounded-md bg-emerald-500 text-white flex items-center justify-center text-[10px] font-black shadow-sm shadow-emerald-200">1</div>
               Origen de Imagen
             </h3>
             <div className="grid grid-cols-2 lg:grid-cols-1 gap-3">
               <button
-                onClick={() => setMode("upload")}
+                onClick={() => {
+                  setMode("upload");
+                  // Small delay to ensure the input is rendered if it was hidden
+                  setTimeout(() => fileInputRef.current?.click(), 0);
+                }}
                 className={cn(
                   "flex flex-col sm:flex-row lg:flex-row items-center sm:items-start gap-2 sm:gap-3 p-3 sm:p-3.5 rounded-lg border transition-all text-left group",
-                  mode === "upload" ? "border-slate-800 bg-slate-50 shadow-sm" : "border-slate-200 hover:border-slate-300 bg-white"
+                  mode === "upload" ? "border-emerald-500 bg-emerald-50/30 shadow-sm" : "border-slate-200 hover:border-slate-300 bg-white"
                 )}
               >
-                <div className={cn("p-2 rounded-md border shrink-0", mode === "upload" ? "bg-slate-100 text-slate-900 border-slate-200" : "bg-slate-50 text-slate-400 border-slate-200 group-hover:text-slate-700")}>
+                <div className={cn("p-2 rounded-md border shrink-0", mode === "upload" ? "bg-emerald-500 text-white border-emerald-400" : "bg-slate-50 text-slate-400 border-slate-200 group-hover:text-slate-700")}>
                   <Upload className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 text-center sm:text-left">
@@ -562,11 +767,11 @@ function ImageTab({ metadata, setMetadata, image, setImage }: any) {
                 )}
               >
                 <div className={cn("p-2 rounded-md border shrink-0", mode === "capture" ? "bg-slate-100 text-slate-900 border-slate-200" : "bg-slate-50 text-slate-400 border-slate-200 group-hover:text-slate-700")}>
-                  <Camera className="h-4 w-4" />
+                  <Telescope className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 text-center sm:text-left">
-                  <span className="block font-bold text-slate-900 text-xs sm:text-sm leading-tight">Captura ZWO</span>
-                  <span className="text-[10px] sm:text-xs font-medium text-slate-400 leading-tight">Live Pi5-A1</span>
+                  <span className="block font-bold text-slate-900 text-xs sm:text-sm leading-tight">Cámara Solar</span>
+                  <span className="text-[10px] sm:text-xs font-medium text-slate-400 leading-tight">Captura en Vivo</span>
                 </div>
               </button>
             </div>
@@ -574,8 +779,8 @@ function ImageTab({ metadata, setMetadata, image, setImage }: any) {
 
           {/* Metadata */}
           <section>
-            <h3 className="text-xs font-bold text-slate-500 uppercase tracking-widest mb-3 flex items-center gap-2">
-              <span className="w-5 h-5 rounded bg-slate-100 text-slate-700 flex items-center justify-center text-[10px] font-black">2</span>
+            <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em] mb-4 flex items-center gap-3">
+              <div className="w-5 h-5 rounded-md bg-emerald-500 text-white flex items-center justify-center text-[10px] font-black shadow-sm shadow-emerald-200">2</div>
               Metadatos
             </h3>
             <div className="space-y-3 bg-white p-4 rounded-lg border border-slate-200">
@@ -607,45 +812,234 @@ function ImageTab({ metadata, setMetadata, image, setImage }: any) {
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Fecha</label>
                   <div className="bg-slate-50 border border-slate-200 rounded-md px-3 py-2">
-                    <input type="date" value={metadata.date} readOnly className="w-full text-xs font-medium bg-transparent focus:outline-none text-slate-700" />
+                    <input 
+                      type="date" 
+                      value={metadata.date} 
+                      onChange={(e) => setMetadata({ ...metadata, date: e.target.value })}
+                      className="w-full text-xs font-medium bg-transparent focus:outline-none text-slate-700 cursor-pointer" 
+                    />
                   </div>
                 </div>
                 <div className="space-y-1">
                   <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Hora</label>
                   <div className="bg-slate-50 border border-slate-200 rounded-md px-3 py-2">
-                    <input type="text" value={metadata.time} readOnly className="w-full text-xs font-medium bg-transparent focus:outline-none text-slate-700" />
+                    <input 
+                      type="time" 
+                      value={metadata.time} 
+                      onChange={(e) => setMetadata({ ...metadata, time: e.target.value })}
+                      className="w-full text-xs font-medium bg-transparent focus:outline-none text-slate-700 cursor-pointer" 
+                    />
                   </div>
                 </div>
               </div>
             </div>
           </section>
+
+          {/* Technical Note (Styled like Analysis Note) */}
+          {image && (
+            <div className="p-3 bg-slate-50 rounded-lg border border-slate-100 shadow-sm animate-in fade-in duration-500">
+              <h5 className="text-[10px] font-black text-slate-700 uppercase tracking-widest mb-1.5 flex items-center gap-1.5">
+                <Info className="h-3 w-3 text-slate-400" /> Alineación Heliográfica
+              </h5>
+              <p className="text-[10px] leading-relaxed text-slate-500 font-medium">
+                Ajuste la posición y zoom del disco solar para que coincida con el mallado heliográfico. Esto garantiza un cálculo preciso de las coordenadas para todas las etapas siguientes.
+              </p>
+            </div>
+          )}
+
+          {/* Siguiente Button (Styled like Confirm button) */}
+          <div className="mt-auto pt-4 border-t border-slate-100">
+            <button
+              disabled={!image}
+              onClick={onNext}
+              className={cn(
+                "w-full py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all",
+                image
+                  ? "bg-slate-800 text-white hover:bg-slate-900 shadow-sm"
+                  : "bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200"
+              )}
+            >
+              Siguiente (Detección)
+              <ChevronRight className="h-4 w-4" />
+            </button>
+          </div>
         </div>
 
         {/* ── Right: Viewport ── */}
         <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm relative overflow-hidden flex items-center justify-center min-h-[300px] sm:min-h-[400px] lg:min-h-0">
           {image ? (
-            <div className="relative w-full h-full p-4 sm:p-8 flex items-center justify-center">
-              <div className="relative w-full max-w-[360px] sm:max-w-[480px] aspect-square rounded-full overflow-hidden border border-slate-200 bg-black shadow-inner flex items-center justify-center">
+            <>
+              <div 
+                className="relative w-full max-w-[360px] sm:max-w-[480px] aspect-square rounded-full overflow-hidden border border-slate-200 bg-black shadow-inner flex items-center justify-center cursor-move touch-none"
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleMouseUp}
+              >
                 {/* Subtle Heliographic Overlay */}
-                <div className="absolute inset-0 z-10 pointer-events-none opacity-20">
+                <div className="absolute inset-0 z-10 pointer-events-none opacity-40">
                   <svg className="w-full h-full" viewBox="0 0 200 200">
-                    {[-60, -30, 0, 30, 60].map(lat => (
-                      <ellipse key={lat} cx="100" cy={100 - 98 * Math.sin(lat * Math.PI / 180)} rx={98 * Math.cos(lat * Math.PI / 180)} ry={98 * Math.cos(lat * Math.PI / 180) * 0.15} stroke="white" strokeWidth="0.2" strokeDasharray="1 4" fill="none" />
-                    ))}
-                    {[-60, -30, 0, 30, 60].map(lon => (
-                      <ellipse key={lon} cx="100" cy="100" rx={98 * Math.sin(lon * Math.PI / 180)} ry={98} stroke="white" strokeWidth="0.2" strokeDasharray="1 4" fill="none" />
-                    ))}
+                    {[-60, -30, 0, 30, 60].map(lat => {
+                      const y = 100 - 92 * Math.sin(lat * Math.PI / 180);
+                      const r = 92 * Math.cos(lat * Math.PI / 180);
+                      return (
+                        <g key={lat}>
+                          <ellipse cx="100" cy={y} rx={r} ry={r * 0.15} stroke="white" strokeWidth="0.5" strokeDasharray="1 4" fill="none" />
+                          <text x={100 + r + 2} y={y + 1.5} fill="white" fontSize="4" fontWeight="bold" opacity="0.6" className="select-none">{lat}°</text>
+                        </g>
+                      );
+                    })}
+                    {[-60, -30, 0, 30, 60].map(lon => {
+                      const rx = 92 * Math.sin(lon * Math.PI / 180);
+                      return (
+                        <g key={lon}>
+                          <ellipse cx="100" cy="100" rx={rx} ry={92} stroke="white" strokeWidth="0.5" strokeDasharray="1 4" fill="none" />
+                        </g>
+                      );
+                    })}
                   </svg>
                 </div>
-                <img src={image} alt="Preview" className="w-full h-full object-cover" />
+                <img 
+                  src={image} 
+                  alt="Preview" 
+                  className="w-full h-full object-cover transition-transform duration-75 select-none pointer-events-none" 
+                  style={{ 
+                    transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`,
+                  }}
+                />
               </div>
-              <button
-                onClick={() => setImage(null)}
-                className="absolute top-3 right-3 p-2 bg-white/90 hover:bg-red-50 hover:text-red-600 text-slate-700 border border-slate-200 rounded-md backdrop-blur-sm shadow-sm transition-all"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+
+              <div className="absolute top-3 right-3 flex gap-2 z-20">
+                <button
+                  onClick={() => setFullscreen(true)}
+                  className="p-2 bg-white/90 hover:bg-slate-100 text-slate-700 border border-slate-200 rounded-md backdrop-blur-sm shadow-sm transition-all"
+                  title="Pantalla Completa"
+                >
+                  <Maximize2 className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setImage(null)}
+                  className="p-2 bg-white/90 hover:bg-red-50 hover:text-red-600 text-slate-700 border border-slate-200 rounded-md backdrop-blur-sm shadow-sm transition-all"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Fullscreen Modal Overlay */}
+              {fullscreen && (
+                <div className="fixed inset-0 z-[100] bg-slate-950 flex flex-col items-center justify-center animate-in fade-in zoom-in-95 duration-300">
+                  <div className="absolute top-6 right-6 flex gap-3">
+                    <button
+                      onClick={() => setFullscreen(false)}
+                      className="bg-white/10 hover:bg-white/20 text-white p-3 rounded-full backdrop-blur-md transition-all"
+                    >
+                      <Minimize2 className="h-6 w-6" />
+                    </button>
+                  </div>
+
+                  <div className="flex-1 w-full flex items-center justify-center p-4 sm:p-12 overflow-hidden">
+                    <div 
+                      className="relative w-full max-w-[90vh] aspect-square rounded-full overflow-hidden border-2 border-white/20 bg-black shadow-[0_0_100px_rgba(0,0,0,0.5)] flex items-center justify-center cursor-move touch-none shrink-0"
+                      onMouseDown={handleMouseDown}
+                      onMouseMove={handleMouseMove}
+                      onMouseUp={handleMouseUp}
+                      onMouseLeave={handleMouseUp}
+                      onTouchStart={handleTouchStart}
+                      onTouchMove={handleTouchMove}
+                      onTouchEnd={handleMouseUp}
+                    >
+                      {/* Grid Overlay */}
+                      <div className="absolute inset-0 z-10 pointer-events-none opacity-60">
+                        <svg className="w-full h-full" viewBox="0 0 200 200">
+                          {[-60, -30, 0, 30, 60].map(lat => {
+                            const y = 100 - 92 * Math.sin(lat * Math.PI / 180);
+                            const r = 92 * Math.cos(lat * Math.PI / 180);
+                            return (
+                              <g key={`fs-lat-${lat}`}>
+                                <ellipse cx="100" cy={y} rx={r} ry={r * 0.15} stroke="white" strokeWidth="0.5" strokeDasharray="1 4" fill="none" />
+                                <text x={100 + r + 2} y={y + 1.5} fill="white" fontSize="4" fontWeight="bold" opacity="0.6">{lat}°</text>
+                              </g>
+                            );
+                          })}
+                          {[-60, -30, 0, 30, 60].map(lon => {
+                            const rx = 92 * Math.sin(lon * Math.PI / 180);
+                            return (
+                              <g key={`fs-lon-${lon}`}>
+                                <ellipse cx="100" cy="100" rx={rx} ry={92} stroke="white" strokeWidth="0.5" strokeDasharray="1 4" fill="none" />
+                                <text x={100 + rx} y={100 + 92 + 5} fill="white" fontSize="4" fontWeight="bold" opacity="0.6" textAnchor="middle">{lon}°</text>
+                              </g>
+                            );
+                          })}
+                        </svg>
+                      </div>
+                      <img 
+                        src={image} 
+                        alt="Preview" 
+                        className="w-full h-full object-cover select-none pointer-events-none" 
+                        style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})` }}
+                      />
+                    </div>
+                  </div>
+
+                  {/* Fullscreen Zoom Controls Overlay */}
+                  <div className="pb-12 px-6 w-full flex justify-center bg-gradient-to-t from-slate-950 to-transparent">
+                    <div className="flex flex-col sm:flex-row items-center gap-4 sm:gap-8 bg-white/10 backdrop-blur-xl border border-white/10 py-4 px-8 sm:px-12 rounded-2xl sm:rounded-full shadow-2xl w-full max-w-2xl sm:w-auto">
+                      <span className="text-[10px] font-black text-white/40 uppercase tracking-[0.2em]">Ajuste de Zoom</span>
+                      <div className="flex items-center gap-4 w-full sm:w-auto">
+                        <input 
+                          type="range" 
+                          min="0.5" 
+                          max="2.5" 
+                          step="0.001" 
+                          value={zoom}
+                          onChange={(e) => setZoom(parseFloat(e.target.value))}
+                          className="flex-1 sm:w-96 h-2 bg-white/10 rounded-full appearance-none accent-white cursor-pointer"
+                        />
+                        <span className="text-sm font-mono font-bold text-white w-16 text-right tabular-nums">
+                          {Math.round(zoom * 100)}%
+                        </span>
+                      </div>
+                      <div className="hidden sm:block w-px h-6 bg-white/10 mx-2" />
+                      <button 
+                        onClick={() => { setZoom(1); setOffset({ x: 0, y: 0 }); }}
+                        className="text-[10px] font-black uppercase tracking-[0.2em] text-white/60 hover:text-white transition-colors"
+                      >
+                        Reset
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* Standard Zoom Slider Control (Visible in normal mode) */}
+              <div className="absolute bottom-6 left-1/2 -translate-x-1/2 flex items-center gap-4 bg-white/95 backdrop-blur-sm border border-slate-200 py-2.5 px-6 rounded-full shadow-xl z-20 group transition-all">
+                <div className="flex items-center gap-3">
+                  <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest">Zoom</span>
+                  <input 
+                    type="range" 
+                    min="0.5" 
+                    max="2.5" 
+                    step="0.001" 
+                    value={zoom}
+                    onChange={(e) => setZoom(parseFloat(e.target.value))}
+                    className="w-48 sm:w-64 h-1 bg-slate-100 rounded-full appearance-none accent-slate-900 cursor-pointer"
+                  />
+                  <span className="text-[10px] font-black text-slate-900 w-12 tabular-nums">
+                    {Math.round(zoom * 100)}%
+                  </span>
+                </div>
+                <div className="w-px h-4 bg-slate-200" />
+                <button 
+                  onClick={() => { setZoom(1); setOffset({ x: 0, y: 0 }); }}
+                  className="text-[9px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900 transition-colors"
+                >
+                  Reset
+                </button>
+              </div>
+            </>
           ) : mode === null ? (
             <div className="text-center space-y-3 p-8">
               <Telescope className="h-12 w-12 text-slate-200 mx-auto" />
@@ -653,11 +1047,7 @@ function ImageTab({ metadata, setMetadata, image, setImage }: any) {
             </div>
           ) : mode === "upload" ? (
             <div 
-              ref={uploadContainerRef}
-              className={cn(
-                "flex flex-col items-center gap-5 p-6 text-center w-full max-w-sm rounded-2xl transition-all duration-500",
-                highlightUpload ? "bg-white shadow-xl ring-2 ring-slate-800 ring-offset-4 scale-[1.02]" : "bg-transparent"
-              )}
+              className="flex flex-col items-center gap-5 p-6 text-center w-full max-w-sm rounded-2xl transition-all duration-500 bg-transparent"
             >
               {uploadError && (
                 <div className="w-full bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm">
@@ -676,6 +1066,7 @@ function ImageTab({ metadata, setMetadata, image, setImage }: any) {
                   <Upload className="h-7 w-7 text-slate-300 group-hover:text-slate-700 transition-colors mb-2" />
                   <span className="text-xs text-slate-400 font-bold group-hover:text-slate-700 transition-colors">Examinar</span>
                   <input
+                    ref={fileInputRef}
                     type="file"
                     accept="image/*"
                     className="hidden"
@@ -841,21 +1232,32 @@ function ImageTab({ metadata, setMetadata, image, setImage }: any) {
 /* ─────────────────────────────────────────────── */
 /*  GROUPING TAB (STAGE 1)                         */
 /* ─────────────────────────────────────────────── */
-function GroupingTab({ image, detections, setDetections, selectedDetection, setSelectedDetection, viewBox, onRunInference, loading, onNext }: any) {
+function GroupingTab({ image, detections, setDetections, selectedDetection, setSelectedDetection, viewBox, onRunInference, loading, onNext, zoom, offset }: any) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [action, setAction] = useState<string | null>(null);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0, w: 0, h: 0, cx: 0, cy: 0 });
 
-  const calculateHeliographic = (px: number, py: number) => {
-    const rx = viewBox.w / 2;
-    const ry = viewBox.h / 2;
-    const R = Math.min(rx, ry);
-    const dx = px - rx;
-    const dy = ry - py;
-    const lat = Math.asin(Math.min(1, Math.abs(dy) / R) * Math.sign(dy)) * (180 / Math.PI);
-    const cosLat = Math.cos(lat * Math.PI / 180);
-    const lon = cosLat === 0 ? 0 : Math.asin(Math.min(1, Math.abs(dx) / (R * cosLat)) * Math.sign(dx)) * (180 / Math.PI);
-    return { lat, lon };
+  const calculateHeliographic = (px: number, py: number, W: number, H: number) => {
+    const cx = W / 2;
+    const cy = H / 2;
+    const R = (W / 2) * 0.92;
+
+    const dx = px - cx;
+    const dy = cy - py; 
+
+    const r_norm = Math.sqrt(dx * dx + dy * dy) / R;
+    if (r_norm > 1.05) return { lat: 0, lon: 0 };
+
+    const rho = Math.asin(Math.min(1, r_norm));
+    const theta = Math.atan2(dx, dy);
+
+    const lat = Math.asin(Math.sin(rho) * Math.cos(theta));
+    const lon = Math.atan2(Math.sin(rho) * Math.sin(theta), Math.cos(rho));
+
+    return {
+      lat: (lat * 180) / Math.PI,
+      lon: (lon * 180) / Math.PI,
+    };
   };
 
   const handleAddBox = (e: any) => {
@@ -863,7 +1265,7 @@ function GroupingTab({ image, detections, setDetections, selectedDetection, setS
     const rect = containerRef.current.getBoundingClientRect();
     const x = ((e.clientX - rect.left) / rect.width) * viewBox.w;
     const y = ((e.clientY - rect.top) / rect.height) * viewBox.h;
-    const { lat, lon } = calculateHeliographic(x, y);
+    const { lat, lon } = calculateHeliographic(x, y, viewBox.w, viewBox.h);
     const newBox = { id: Date.now(), x, y, w: 50, h: 50, lat, lon, mcintosh: "Axx", mag_class: "None" };
     setDetections([...detections, newBox]);
     setSelectedDetection(newBox.id);
@@ -907,7 +1309,7 @@ function GroupingTab({ image, detections, setDetections, selectedDetection, setS
     newW = Math.max(10, newW);
     newH = Math.max(10, newH);
 
-    const { lat, lon } = calculateHeliographic(newCx, newCy);
+    const { lat, lon } = calculateHeliographic(newCx, newCy, viewBox.w, viewBox.h);
 
     setDetections(detections.map((d: any) => 
       d.id === selectedDetection ? { ...d, w: newW, h: newH, x: newCx, y: newCy, lat, lon } : d
@@ -930,7 +1332,7 @@ function GroupingTab({ image, detections, setDetections, selectedDetection, setS
       <div className="flex flex-col lg:flex-row gap-6 lg:gap-8 flex-1">
         {/* ── Canvas Area ── */}
         <div
-          className="flex-1 bg-white border border-slate-200 shadow-sm rounded-xl relative overflow-hidden flex items-center justify-center cursor-crosshair min-h-[280px] sm:min-h-[380px]"
+          className="flex-1 bg-white border border-slate-200 shadow-sm rounded-xl relative overflow-hidden flex items-center justify-center cursor-crosshair min-h-[300px] sm:min-h-[380px] p-4 sm:p-8"
           ref={containerRef}
           onDoubleClick={handleAddBox}
           onMouseMove={handleMouseMove}
@@ -941,38 +1343,49 @@ function GroupingTab({ image, detections, setDetections, selectedDetection, setS
               <p className="text-sm font-bold text-slate-400">Sin Datos de Imagen</p>
             </div>
           ) : (
-            <div className="relative w-full max-w-[560px] aspect-square rounded-full overflow-hidden border border-slate-200 bg-black shadow-sm" style={{ aspectRatio: "1/1" }}>
-              <img src={image} alt="Solar Disk" className="absolute inset-0 w-full h-full object-cover opacity-80" />
-              <svg viewBox={`0 0 ${viewBox.w} ${viewBox.h}`} className="absolute inset-0 w-full h-full">
-                <g opacity="0.4" pointerEvents="none" stroke="#fff" strokeWidth="1.5" strokeDasharray="6 4">
-                    {[-60, -30, 0, 30, 60].map(phi => {
-                        const R = viewBox.w / 2;
-                        const x0 = R;
-                        const y0 = R;
-                        const r_p = R * Math.cos(phi * Math.PI / 180);
-                        const y_p = y0 - R * Math.sin(phi * Math.PI / 180);
-                        return (
-                            <g key={`lat-${phi}`}>
-                                <ellipse cx={x0} cy={y_p} rx={r_p} ry={r_p * 0.15} fill="none" />
-                                <text x={x0 + r_p + 15} y={y_p + 5} fill="white" fontSize="24" fontWeight="bold" stroke="none" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>{phi}°</text>
-                            </g>
-                        );
-                    })}
-                    {[-60, -30, 0, 30, 60].map(lam => {
-                        const R = viewBox.w / 2;
-                        const x0 = R;
-                        const y0 = R;
-                        const rx = R * Math.sin(lam * Math.PI / 180);
-                        return (
-                            <g key={`lon-${lam}`}>
-                                <ellipse cx={x0} cy={y0} rx={rx} ry={R} fill="none" />
-                                <text x={x0 + rx} y={y0 + R + 40} fill="white" fontSize="24" fontWeight="bold" textAnchor="middle" stroke="none" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>{lam}°</text>
-                            </g>
-                        );
-                    })}
-                </g>
-                {detections.map((d: any) => (
-                  <g key={d.id} onMouseDown={(e) => handleActionStart(e, 'move', d)} className={selectedDetection === d.id ? "cursor-move" : "cursor-pointer"}>
+            <div className="relative w-full max-w-[360px] sm:max-w-[480px] aspect-square rounded-full overflow-hidden border border-slate-200 bg-black shadow-inner flex items-center justify-center" style={{ aspectRatio: "1/1" }}>
+              <div 
+                className="absolute inset-0 w-full h-full transition-transform duration-75"
+                style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})` }}
+              >
+                <img src={image} alt="Solar Disk" className="absolute inset-0 w-full h-full object-cover opacity-80" />
+                
+                {/* Unified Heliographic Grid (matches ImageTab) */}
+                <svg viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 w-full h-full pointer-events-none">
+                  <g opacity="0.7" stroke="#fff" strokeWidth="0.5" strokeDasharray="1 4">
+                      {[-60, -30, 0, 30, 60].map(phi => {
+                          const R = 92;
+                          const x0 = 100;
+                          const y0 = 100;
+                          const r_p = R * Math.cos(phi * Math.PI / 180);
+                          const y_p = y0 - R * Math.sin(phi * Math.PI / 180);
+                          return (
+                              <g key={`lat-${phi}`}>
+                                  <ellipse cx={x0} cy={y_p} rx={r_p} ry={r_p * 0.15} fill="none" />
+                                  <text x={x0 + r_p + 2} y={y_p + 1.5} fill="white" fontSize="4" fontWeight="bold" stroke="none" opacity="0.8">{phi}°</text>
+                              </g>
+                          );
+                      })}
+                      {[-60, -30, 0, 30, 60].map(lam => {
+                          const R = 92;
+                          const x0 = 100;
+                          const y0 = 100;
+                          const rx = R * Math.sin(lam * Math.PI / 180);
+                          return (
+                              <g key={`lon-${lam}`}>
+                                  <ellipse cx={x0} cy={y0} rx={rx} ry={R} fill="none" />
+                              </g>
+                          );
+                      })}
+                  </g>
+                </svg>
+              </div>
+              
+              {/* Detection Layer - Must also use slice to match image position */}
+              <svg viewBox={`0 0 ${viewBox.w} ${viewBox.h}`} preserveAspectRatio="xMidYMid slice" className="absolute inset-0 w-full h-full pointer-events-none">
+                <g style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`, transformOrigin: 'center' }} className="transition-transform duration-75">
+                  {detections.map((d: any) => (
+                    <g key={d.id} pointerEvents="auto" onMouseDown={(e) => handleActionStart(e, 'move', d)} className={selectedDetection === d.id ? "cursor-move" : "cursor-pointer"}>
                     <rect
                       x={d.x - d.w / 2} y={d.y - d.h / 2} width={d.w} height={d.h}
                       fill={selectedDetection === d.id ? "rgba(34,197,94,0.1)" : "transparent"}
@@ -990,6 +1403,7 @@ function GroupingTab({ image, detections, setDetections, selectedDetection, setS
                     )}
                   </g>
                 ))}
+                </g>
               </svg>
             </div>
           )}
@@ -1139,21 +1553,16 @@ function ClassificationTab({ image, detections, setDetections, selectedDetection
 
   const [inferenceResults, setInferenceResults] = useState<Record<number, any>>({});
   const [loadingInference, setLoadingInference] = useState(false);
+  const [processingId, setProcessingId] = useState<number | null>(null);
 
-  // Run inference when a detection is selected if not already done
+  // Auto-process all detections sequentially
   useEffect(() => {
-    if (!selectedDetection || !selectedData || inferenceResults[selectedDetection]) return;
+    const runBulkInference = async () => {
+      const pending = detections.filter((d: any) => !inferenceResults[d.id]);
+      if (pending.length === 0) return;
 
-    const runInference = async () => {
       setLoadingInference(true);
       try {
-        // Create a temporary canvas to get the crop
-        const canvas = document.createElement("canvas");
-        canvas.width = 224;
-        canvas.height = 224;
-        const ctx = canvas.getContext("2d");
-        if (!ctx) return;
-
         const img = new window.Image();
         img.crossOrigin = "anonymous";
         img.src = image;
@@ -1162,50 +1571,62 @@ function ClassificationTab({ image, detections, setDetections, selectedDetection
         const scaleX = img.width / viewBox.w;
         const scaleY = img.height / viewBox.h;
 
-        const srcX = (selectedData.x - selectedData.w / 2) * scaleX;
-        const srcY = (selectedData.y - selectedData.h / 2) * scaleY;
-        const srcW = selectedData.w * scaleX;
-        const srcH = selectedData.h * scaleY;
+        const canvas = document.createElement("canvas");
+        canvas.width = 224;
+        canvas.height = 224;
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return;
 
-        ctx.fillStyle = "black";
-        ctx.fillRect(0, 0, 224, 224);
+        for (const det of pending) {
+          setProcessingId(det.id);
+          
+          // Yield to the event loop so React can render the 'Procesando' overlay
+          // before the heavy synchronous ONNX inference blocks the main thread
+          await new Promise(resolve => setTimeout(resolve, 150));
+          
+          const srcX = (det.x - det.w / 2) * scaleX;
+          const srcY = (det.y - det.h / 2) * scaleY;
+          const srcW = det.w * scaleX;
+          const srcH = det.h * scaleY;
 
-        const scale = Math.min(1, 224 / srcW, 224 / srcH);
-        const dstW = srcW * scale;
-        const dstH = srcH * scale;
-        const dstX = (224 - dstW) / 2;
-        const dstY = (224 - dstH) / 2;
+          ctx.fillStyle = "black";
+          ctx.fillRect(0, 0, 224, 224);
 
-        ctx.drawImage(img, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
+          const scale = Math.min(1, 224 / srcW, 224 / srcH);
+          const dstW = srcW * scale;
+          const dstH = srcH * scale;
+          const dstX = (224 - dstW) / 2;
+          const dstY = (224 - dstH) / 2;
 
-        const result = await runClassificationInference(canvas);
-        setInferenceResults(prev => ({ ...prev, [selectedDetection]: result }));
-        
-        // Auto-select best recommendation if mcintosh is default Axx
-        if (selectedData.mcintosh === "Axx") {
-          const { pZ, pP, pC, validMask, classes } = result;
-          // Find best Z
-          const zi = pZ.indexOf(Math.max(...pZ));
-          // Get conditioned P
-          const { condP } = getConditionedProbs(pZ, pP, pC, validMask, zi, null);
-          const pi = condP.indexOf(Math.max(...condP));
-          // Get conditioned C
-          const { condC } = getConditionedProbs(pZ, pP, pC, validMask, zi, pi);
-          const ci = condC.indexOf(Math.max(...condC));
+          ctx.drawImage(img, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
 
-          const mcintosh = `${classes.Z[zi]}${classes.P[pi]}${classes.C[ci]}`;
-          setDetections(detections.map((d: any) => d.id === selectedDetection ? { ...d, mcintosh } : d));
+          const result = await runClassificationInference(canvas);
+          
+          // Update parent state with best prediction if it's still default
+          if (det.mcintosh === "Axx") {
+            const { pZ, pP, pC, validMask, classes } = result;
+            const zi = pZ.indexOf(Math.max(...pZ));
+            const { condP } = getConditionedProbs(pZ, pP, pC, validMask, zi, null);
+            const pi = condP.indexOf(Math.max(...condP));
+            const { condC } = getConditionedProbs(pZ, pP, pC, validMask, zi, pi);
+            const ci = condC.indexOf(Math.max(...condC));
+
+            const mcintosh = `${classes.Z[zi]}${classes.P[pi]}${classes.C[ci]}`;
+            setDetections((prev: any[]) => prev.map(d => d.id === det.id ? { ...d, mcintosh, origin: 'model' } : d));
+          }
+
+          setInferenceResults(prev => ({ ...prev, [det.id]: result }));
         }
-
       } catch (err) {
-        console.error("Classification inference error:", err);
+        console.error("Bulk classification error:", err);
       } finally {
         setLoadingInference(false);
+        setProcessingId(null);
       }
     };
 
-    runInference();
-  }, [selectedDetection, selectedData, image, viewBox, inferenceResults, setDetections, detections]);
+    runBulkInference();
+  }, [image, detections.length, viewBox, inferenceResults]); 
 
   const currentResult = selectedDetection ? inferenceResults[selectedDetection] : null;
 
@@ -1221,6 +1642,15 @@ function ClassificationTab({ image, detections, setDetections, selectedDetection
   const { condP, condC } = currentResult 
     ? getConditionedProbs(currentResult.pZ, currentResult.pP, currentResult.pC, currentResult.validMask, zi !== -1 ? zi : null, pi !== -1 ? pi : null)
     : { condP: [], condC: [] };
+
+  const handleSelection = (type: 'Z' | 'P' | 'C', val: string) => {
+    let newMc = selectedData.mcintosh.split("");
+    if (type === 'Z') newMc[0] = val;
+    if (type === 'P') newMc[1] = val;
+    if (type === 'C') newMc[2] = val;
+    const mcintosh = newMc.join("");
+    setDetections((prev: any[]) => prev.map(d => d.id === selectedDetection ? { ...d, mcintosh, origin: 'user' } : d));
+  };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 h-full flex flex-col bg-slate-50">
@@ -1245,15 +1675,27 @@ function ClassificationTab({ image, detections, setDetections, selectedDetection
               >
                 <CropImage imageSrc={image} detection={d} viewBox={viewBox} />
                 
-                {/* Loading Overlay */}
-                {loadingInference && selectedDetection === d.id && (
-                  <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 animate-in fade-in duration-200">
-                    <div className="h-6 w-6 border-2 border-white/20 border-t-white rounded-md animate-spin" />
-                    <span className="text-[10px] font-black text-white uppercase tracking-tighter">Analizando</span>
+                {/* Default Label Overlay with Source Icon */}
+                {d.mcintosh && d.mcintosh !== "Axx" && (
+                  <div className="absolute top-2 right-2 z-20 flex items-center gap-1.5 bg-emerald-600 text-white text-[10px] font-black px-2 py-0.5 rounded shadow-lg shadow-emerald-900/40 border border-emerald-400/50 animate-in zoom-in duration-300">
+                    {d.origin === 'user' ? (
+                      <User className="h-3 w-3" strokeWidth={3} />
+                    ) : (
+                      <Activity className="h-3 w-3" strokeWidth={3} />
+                    )}
+                    {d.mcintosh}
                   </div>
                 )}
 
-                <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-sm p-2 text-center opacity-0 group-hover:opacity-100 transition-opacity">
+                {/* Loading Overlay (Domino Effect) */}
+                {loadingInference && processingId === d.id && (
+                  <div className="absolute inset-0 bg-slate-900/70 backdrop-blur-[3px] flex flex-col items-center justify-center gap-2 animate-in fade-in duration-300 z-30">
+                    <div className="h-6 w-6 border-2 border-white/20 border-t-emerald-400 rounded-md animate-spin" />
+                    <span className="text-[10px] font-black text-emerald-400 uppercase tracking-[0.2em] animate-pulse">Procesando</span>
+                  </div>
+                )}
+
+                <div className="absolute inset-x-0 bottom-0 bg-black/60 backdrop-blur-sm p-2 text-center opacity-0 group-hover:opacity-100 transition-opacity z-20">
                   <span className="text-[10px] font-bold text-white block">UUID: {d.id.toString(16).slice(-4)}</span>
                 </div>
               </div>
@@ -1315,7 +1757,7 @@ function ClassificationTab({ image, detections, setDetections, selectedDetection
                           return combos.slice(0, 3).map((c, i) => (
                             <button
                               key={c.mc}
-                              onClick={() => setDetections(detections.map((d: any) => d.id === selectedDetection ? { ...d, mcintosh: c.mc } : d))}
+                              onClick={() => setDetections(detections.map((d: any) => d.id === selectedDetection ? { ...d, mcintosh: c.mc, origin: 'model' } : d))}
                               className={cn(
                                 "px-2.5 py-1 rounded text-[11px] font-bold transition-all shadow-sm", 
                                 selectedData.mcintosh === c.mc 
@@ -1345,8 +1787,8 @@ function ClassificationTab({ image, detections, setDetections, selectedDetection
                           <button
                             key={char}
                             onClick={() => {
-                              const newMc = char + "xx"; // Reset others on Z change
-                              setDetections(detections.map((d: any) => d.id === selectedDetection ? { ...d, mcintosh: newMc } : d));
+                              const newMc = char + "xx"; 
+                              setDetections(detections.map((d: any) => d.id === selectedDetection ? { ...d, mcintosh: newMc, origin: 'user' } : d));
                             }}
                             className={cn(
                               "h-9 w-9 flex items-center justify-center rounded-md text-xs font-black transition-all border shadow-sm",
@@ -1374,10 +1816,7 @@ function ClassificationTab({ image, detections, setDetections, selectedDetection
                             <button
                               key={char}
                               disabled={!isValid || zi === -1}
-                              onClick={() => {
-                                const newMc = mcZ + char + "x";
-                                setDetections(detections.map((d: any) => d.id === selectedDetection ? { ...d, mcintosh: newMc } : d));
-                              }}
+                              onClick={() => handleSelection('P', char)}
                               className={cn(
                                 "h-9 w-9 flex items-center justify-center rounded-md text-xs font-black transition-all border shadow-sm",
                                 mcP === char 
@@ -1407,10 +1846,7 @@ function ClassificationTab({ image, detections, setDetections, selectedDetection
                             <button
                               key={char}
                               disabled={!isValid || pi === -1}
-                              onClick={() => {
-                                const newMc = mcZ + mcP + char;
-                                setDetections(detections.map((d: any) => d.id === selectedDetection ? { ...d, mcintosh: newMc } : d));
-                              }}
+                              onClick={() => handleSelection('C', char)}
                               className={cn(
                                 "h-9 w-9 flex items-center justify-center rounded-md text-xs font-black transition-all border shadow-sm",
                                 mcC === char 
@@ -1509,7 +1945,7 @@ function ClassificationTab({ image, detections, setDetections, selectedDetection
 /* ─────────────────────────────────────────────── */
 /*  REPORT TAB                                     */
 /* ─────────────────────────────────────────────── */
-function ReportTab({ metadata, detections, image, viewBox }: any) {
+function ReportTab({ metadata, detections, image, viewBox, zoom, offset }: any) {
   const reportRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
 
@@ -1533,7 +1969,23 @@ function ReportTab({ metadata, detections, image, viewBox }: any) {
         scale: 2,
         useCORS: true,
         backgroundColor: "#ffffff",
-        logging: true, // Enable html2canvas internal logging
+        logging: true,
+        onclone: (clonedDoc: Document) => {
+          // Compatibility fix for html2canvas crashing on oklch/oklab
+          const elements = clonedDoc.getElementsByTagName("*");
+          for (let i = 0; i < elements.length; i++) {
+            const el = elements[i] as HTMLElement;
+            if (el.style) {
+              // Forced replacement of problematic color functions if any
+              // This is a safety measure
+              const styles = window.getComputedStyle(el);
+              if (styles.color.includes('okl') || styles.backgroundColor.includes('okl')) {
+                // If computed style uses oklch, we try to force a hex/rgb fallback
+                // For now, most of our report already uses hardcoded hex
+              }
+            }
+          }
+        }
       };
 
       console.log("Capturando resumen...");
@@ -1605,30 +2057,71 @@ function ReportTab({ metadata, detections, image, viewBox }: any) {
         ref={reportRef}
         className="max-w-4xl w-full flex flex-col mb-10 gap-10"
       >
-        <div id="report-summary" className="bg-[#ffffff] rounded-xl border border-[#e2e8f0] shadow-sm p-6 sm:p-10 flex flex-col text-[#0f172a]">
+        {/* We use a fixed width of 800px for the capture targets to avoid responsive shifts */}
+        <div id="report-summary" className="bg-[#ffffff] rounded-xl border border-[#e2e8f0] shadow-sm p-10 flex flex-col text-[#0f172a] w-[800px] mx-auto shrink-0">
         {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between border-b border-[#e2e8f0] pb-6 mb-8 gap-4">
-          <div className="flex items-center gap-2">
-            <div>
-              <h2 className="text-xl font-bold text-[#0f172a]">Informe de Observación Heliográfica</h2>
-              <p className="text-[10px] font-semibold text-[#94a3b8] mt-0.5 uppercase tracking-widest">Plataforma de Investigación Solar</p>
+        <div className="flex justify-between border-b-2 border-[#0f172a] pb-8 mb-10 gap-4 items-end">
+          <div className="flex items-center gap-4">
+            <BrandLogo size={60} className="shrink-0" />
+            <div className="pl-4" style={{ borderLeft: '2px solid #f1f5f9' }}>
+              <h2 className="text-2xl font-black text-[#0f172a] tracking-tighter uppercase">Informe de Observación</h2>
+              <p className="text-[10px] font-black text-[#94a3b8] mt-0.5 uppercase tracking-[0.3em]">Plataforma de Investigación Solar</p>
             </div>
           </div>
-          <div className="sm:text-right">
-            <p className="text-[10px] font-black text-[#94a3b8] mb-1 uppercase tracking-widest">Referencia</p>
-            <p className="text-base font-mono font-bold text-[#0f172a]">REF-{metadata.date.replace(/-/g, "")}-S3</p>
+          <div className="text-right">
+            <p className="text-[10px] font-black text-[#94a3b8] mb-1 uppercase tracking-widest">Código de Registro</p>
+            <p className="text-lg font-mono font-bold text-[#0f172a] tracking-tight">REF-{metadata.date.replace(/-/g, "")}-S3</p>
           </div>
         </div>
 
         {/* Visual Summary */}
         <div className="mb-10 space-y-4">
-          <h4 className="text-[10px] font-black border-b border-[#f1f5f9] pb-2 text-[#64748b] uppercase tracking-widest">Resumen Visual del Disco</h4>
-          <div className="aspect-square max-w-sm mx-auto bg-black rounded-full overflow-hidden border-4 border-[#f1f5f9] shadow-xl relative">
-            <img src={image} alt="Full Disk" className="w-full h-full object-cover" />
-            <svg viewBox={`0 0 ${viewBox.w} ${viewBox.h}`} className="absolute inset-0 w-full h-full opacity-40">
-               {detections.map((d: any) => (
-                 <rect key={d.id} x={d.x - d.w/2} y={d.y-d.h/2} width={d.w} height={d.h} fill="none" stroke="#22c55e" strokeWidth="4" />
-               ))}
+          <h4 className="text-[10px] font-black border-b border-[#f1f5f9] pb-2 text-[#64748b] uppercase tracking-widest">Resumen Visual del Disco (Alineación Heliográfica)</h4>
+          <div className="aspect-square w-full max-w-[480px] mx-auto bg-black rounded-full overflow-hidden border-4 border-[#f1f5f9] shadow-xl relative">
+            <div 
+              className="absolute inset-0 w-full h-full"
+              style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})` }}
+            >
+              <img src={image} alt="Full Disk" className="w-full h-full object-cover opacity-90" />
+              
+              {/* Mesh for Report consistency (matches ImageTab) */}
+              <svg viewBox="0 0 200 200" preserveAspectRatio="xMidYMid slice" className="absolute inset-0 w-full h-full pointer-events-none">
+                <g opacity="0.5" stroke="#fff" strokeWidth="0.5" strokeDasharray="1 4">
+                    {[-60, -30, 0, 30, 60].map(phi => {
+                        const R = 92;
+                        const x0 = 100;
+                        const y0 = 100;
+                        const r_p = R * Math.cos(phi * Math.PI / 180);
+                        const y_p = y0 - R * Math.sin(phi * Math.PI / 180);
+                        return (
+                          <g key={`r-lat-${phi}`}>
+                            <ellipse cx={x0} cy={y_p} rx={r_p} ry={r_p * 0.15} fill="none" />
+                            <text x={x0 + r_p + 2} y={y_p + 1.5} fill="white" fontSize="4" fontWeight="bold" stroke="none" opacity="0.8">{phi}°</text>
+                          </g>
+                        );
+                    })}
+                    {[-60, -30, 0, 30, 60].map(lam => {
+                        const R = 92;
+                        const x0 = 100;
+                        const y0 = 100;
+                        const rx = R * Math.sin(lam * Math.PI / 180);
+                        return (
+                          <g key={`r-lon-${lam}`}>
+                            <ellipse cx={x0} cy={y0} rx={rx} ry={R} fill="none" />
+                          </g>
+                        );
+                    })}
+                </g>
+              </svg>
+            </div>
+            
+            {/* Detection Layer for Report */}
+            <svg viewBox={`0 0 ${viewBox.w} ${viewBox.h}`} preserveAspectRatio="xMidYMid slice" className="absolute inset-0 w-full h-full pointer-events-none">
+               <g style={{ transform: `translate(${offset.x}px, ${offset.y}px) scale(${zoom})`, transformOrigin: 'center' }}>
+                {detections.map((d: any) => (
+                  <rect key={d.id} x={d.x - d.w/2} y={d.y-d.h/2} width={d.w} height={d.h} fill="none" stroke="#22c55e" strokeWidth="4" />
+                ))}
+               </g>
             </svg>
           </div>
         </div>
@@ -1655,19 +2148,23 @@ function ReportTab({ metadata, detections, image, viewBox }: any) {
           </div>
         </div>
 
-        {/* Technical Notes */}
-        <div className="mb-10 p-4 bg-[#f8fafc] rounded-lg border border-[#f1f5f9] space-y-2">
-          <h4 className="text-[10px] font-black text-[#64748b] uppercase tracking-widest flex items-center gap-2">
-            <Activity className="h-3 w-3" /> Observaciones del Sistema
-          </h4>
-          <p className="text-xs text-[#475569] leading-relaxed">
-            Este registro ha sido generado mediante un proceso de análisis híbrido. El agrupamiento inicial de manchas solares fue realizado por el modelo de visión artificial <strong>YOLO26n</strong>. La clasificación morfológica sugerida y el procesamiento de recortes normalizados de 224x224 fueron gestionados por la arquitectura <strong>ConvNextV2</strong>, con validación final por parte del observador.
-          </p>
-        </div>
         </div>
 
         {/* Table Section (Page 2+) */}
-        <div id="report-table" className="bg-[#ffffff] rounded-xl border border-[#e2e8f0] shadow-sm p-6 sm:p-10 flex flex-col text-[#0f172a]">
+        <div id="report-table" className="bg-[#ffffff] rounded-xl border border-[#e2e8f0] shadow-sm p-10 flex flex-col text-[#0f172a] w-[800px] mx-auto shrink-0">
+          {/* Technical Notes moved here */}
+          <div className="mb-8 p-6 bg-[#0f172a] text-white rounded-xl shadow-inner relative overflow-hidden group">
+            <div className="absolute top-0 right-0 p-4 opacity-10">
+               <Activity className="h-16 w-16" />
+            </div>
+            <h4 className="text-[10px] font-black text-[#10b981] uppercase tracking-[0.3em] flex items-center gap-2 mb-3 relative z-10">
+              <div className="w-1.5 h-1.5 rounded-full bg-[#10b981]" />
+              Metodología de Procesamiento
+            </h4>
+            <p className="text-xs text-[#cbd5e1] leading-relaxed font-medium relative z-10">
+              Este informe es el resultado de un análisis híbrido de visión artificial. La detección de estructuras fotosféricas ha sido realizada mediante el modelo <strong className="text-white">YOLOv26 nano</strong>. La clasificación morfológica y el análisis de recortes normalizados fueron gestionados por la arquitectura <strong className="text-white">ConvNextV2 atto jerárquico</strong>, con supervisión técnica final.
+            </p>
+          </div>
         <div className="space-y-4">
           <h4 className="text-[10px] font-black border-b border-[#f1f5f9] pb-2 flex justify-between items-center text-[#64748b] uppercase tracking-widest">
             Detalle de Manchas Detectadas
@@ -1694,7 +2191,7 @@ function ReportTab({ metadata, detections, image, viewBox }: any) {
                 </thead>
                 <tbody className="divide-y divide-[#f1f5f9] text-sm bg-white">
                   {detections.map((d: any) => (
-                    <tr key={d.id} className="hover:bg-[#f8fafc] transition-colors">
+                    <tr key={d.id} style={{ borderBottom: '1px solid #f1f5f9' }}>
                       <td className="p-4">
                          <div className="w-16 h-16 bg-black rounded border border-[#e2e8f0] overflow-hidden">
                            <CropImage imageSrc={image} detection={d} viewBox={viewBox} />

@@ -21,6 +21,7 @@ const navItems = [
 ];
 
 import { AuthProvider, useAuth } from "@/lib/AuthContext";
+import { BrandLogo } from "./BrandLogo";
 
 export function Sidebar() {
   const router = useRouter();
@@ -49,11 +50,11 @@ export function Sidebar() {
 
   return (
     <>
-      <div className="lg:hidden fixed top-0 left-0 right-0 h-16 bg-white border-b border-slate-200 z-40 flex items-center justify-between px-4 shadow-sm">
-        <div className="flex items-center gap-3">
-          {/* Logo removed */}
-        </div>
-        <button onClick={() => setIsOpen(!isOpen)} className="p-2 text-slate-500 hover:text-slate-800">
+      <div className="lg:hidden fixed top-4 right-4 z-50">
+        <button 
+          onClick={() => setIsOpen(!isOpen)} 
+          className="p-3 bg-white border border-slate-200 text-slate-600 rounded-full shadow-lg hover:shadow-xl transition-all active:scale-95"
+        >
           {isOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
@@ -69,8 +70,8 @@ export function Sidebar() {
         "fixed lg:static inset-y-0 left-0 z-50 w-64 flex flex-col bg-white text-slate-600 border-r border-slate-200 transform transition-transform duration-300 lg:transform-none pt-16 lg:pt-0",
         isOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
       )}>
-        <div className="hidden lg:flex items-center gap-3 p-8">
-          {/* Logo removed */}
+        <div className="flex items-center gap-3 p-8 border-b border-slate-50 mb-4">
+          <BrandLogo size={32} />
         </div>
         
         <nav className="flex-1 space-y-1 p-0 py-6">

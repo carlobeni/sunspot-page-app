@@ -5,6 +5,7 @@ import { useRouter } from "next/router";
 import { View, Loader2, KeyRound, Globe, ArrowLeft, ShieldCheck } from "lucide-react";
 import { useState, useTransition } from "react";
 import { supabase } from "@/lib/supabase";
+import { BrandLogo } from "@/components/BrandLogo";
 
 export default function RecoverPage() {
   const router = useRouter();
@@ -38,15 +39,14 @@ export default function RecoverPage() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
       {/* Subtle Background Detail */}
-      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-20">
+      <div className="absolute inset-0 pointer-events-none overflow-hidden opacity-30">
+         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[900px] h-[900px] bg-[radial-gradient(circle,_rgba(16,185,129,0.02)_0%,_transparent_70%)] animate-pulse duration-[8000ms]" />
          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[800px] border border-slate-200 rounded-full opacity-40" />
       </div>
 
       <div className="max-w-md w-full space-y-8 bg-white p-8 sm:p-12 rounded-2xl border border-slate-200 shadow-sm relative z-10">
         <div className="flex flex-col items-center">
-          <div className="w-12 h-12 bg-slate-900 rounded-xl flex items-center justify-center mb-8 shadow-lg">
-            <KeyRound className="h-6 w-6 text-white" strokeWidth={1.5} />
-          </div>
+          <BrandLogo size={48} className="mb-6" />
           <h2 className="text-center text-2xl font-bold text-slate-900 tracking-tight">
             Recuperación de Acceso
           </h2>
