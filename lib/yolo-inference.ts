@@ -16,6 +16,8 @@ export interface BoundingBox {
 // Ensure the WASM paths are configured if needed
 // ort.env.wasm.wasmPaths = "/";
 
+import { getModelFromCache } from "./model-loader";
+
 let session: ort.InferenceSession | null = null;
 
 export async function initModel(modelPath: string = "/models/group_model_yolo26n.onnx") {
@@ -23,10 +25,20 @@ export async function initModel(modelPath: string = "/models/group_model_yolo26n
   
   try {
     ort.env.wasm.wasmPaths = "/";
-    session = await ort.InferenceSession.create(modelPath, {
-      executionProviders: ["wasm"],
-      graphOptimizationLevel: "all"
-    });
+    
+    const cachedModel = await getModelFromCache(modelPath);
+    if (cachedModel) {
+      session = await ort.InferenceSession.create(cachedModel, {
+        executionProviders: ["wasm"],
+        graphOptimizationLevel: "all"
+      });
+    } else {
+      session = await ort.InferenceSession.create(modelPath, {
+        executionProviders: ["wasm"],
+        graphOptimizationLevel: "all"
+      });
+    }
+    
     console.log("ONNX Model loaded successfully");
     return session;
   } catch (error) {

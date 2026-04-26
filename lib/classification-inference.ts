@@ -13,6 +13,8 @@ export interface ClassificationMetadata {
   };
 }
 
+import { getModelFromCache } from "./model-loader";
+
 let classificationSession: ort.InferenceSession | null = null;
 let metadata: ClassificationMetadata | null = null;
 let validMask: Uint8Array | null = null;
@@ -25,29 +27,49 @@ export async function initClassificationModel() {
   try {
     ort.env.wasm.wasmPaths = "/";
     
-    // Load Session
-    classificationSession = await ort.InferenceSession.create(
-      "/models/clasification_model_convnextv2tinny/sunscc_3head.onnx",
-      { executionProviders: ["wasm"], graphOptimizationLevel: "all" }
-    );
+    const modelUrl = "/models/clasification_model_convnextv2tinny/sunscc_3head.onnx";
+    const metaUrl = "/models/clasification_model_convnextv2tinny/sunscc_3head_metadata.json";
+    const maskUrl = "/models/clasification_model_convnextv2tinny/valid_mask.npy";
 
-    // Load Metadata
-    const metaRes = await fetch("/models/clasification_model_convnextv2tinny/sunscc_3head_metadata.json");
-    metadata = await metaRes.json();
+    // 1. Load Session (Check Cache)
+    const cachedModel = await getModelFromCache(modelUrl);
+    if (cachedModel) {
+      classificationSession = await ort.InferenceSession.create(cachedModel, {
+        executionProviders: ["wasm"],
+        graphOptimizationLevel: "all"
+      });
+    } else {
+      classificationSession = await ort.InferenceSession.create(modelUrl, {
+        executionProviders: ["wasm"],
+        graphOptimizationLevel: "all"
+      });
+    }
 
-    // Load Valid Mask (npy)
-    // The .npy file has a header. For uint8 [7, 6, 4], the data is the last 168 bytes.
-    const maskRes = await fetch("/models/clasification_model_convnextv2tinny/valid_mask.npy");
-    const maskBuffer = await maskRes.arrayBuffer();
-    // NPY header is usually variable length but for small files it's often 128 bytes.
-    // Let's find the start of the data. Uint8Array(maskBuffer)
+    // 2. Load Metadata (Check Cache)
+    const cachedMeta = await getModelFromCache(metaUrl);
+    if (cachedMeta) {
+      const decoder = new TextDecoder("utf-8");
+      metadata = JSON.parse(decoder.decode(cachedMeta));
+    } else {
+      const metaRes = await fetch(metaUrl);
+      metadata = await metaRes.json();
+    }
+
+    // 3. Load Valid Mask (Check Cache)
+    const cachedMask = await getModelFromCache(maskUrl);
+    let maskBuffer: ArrayBuffer;
+    if (cachedMask) {
+      maskBuffer = cachedMask;
+    } else {
+      const maskRes = await fetch(maskUrl);
+      maskBuffer = await maskRes.arrayBuffer();
+    }
+    
     const fullArray = new Uint8Array(maskBuffer);
-    // Simple heuristic for .npy: the data usually follows the header which ends with \n
-    // Or we just take the last 168 bytes if we know the shape is [7, 6, 4]
     const dataSize = 7 * 6 * 4;
     validMask = fullArray.slice(fullArray.length - dataSize);
 
-    console.log("Classification Model and Metadata loaded");
+    console.log("Classification Model and Metadata loaded (cached if available)");
     return { session: classificationSession, metadata, validMask };
   } catch (error) {
     console.error("Error loading classification model:", error);

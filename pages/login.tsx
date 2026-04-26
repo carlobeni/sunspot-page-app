@@ -6,12 +6,17 @@ import { Loader2, ShieldCheck, Globe, Telescope } from "lucide-react";
 import { useState, useTransition } from "react";
 import Head from "next/head";
 import { supabase } from "@/lib/supabase";
+import { checkModelsCached, downloadModelsWithProgress, ModelLoadProgress } from "@/lib/model-loader";
 
 export default function LoginPage() {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Model loading states
+  const [isPreparingModels, setIsPreparingModels] = useState(false);
+  const [modelProgress, setModelProgress] = useState<ModelLoadProgress | null>(null);
 
   const handleLogin = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -35,7 +40,22 @@ export default function LoginPage() {
       return;
     }
 
-    console.log("LoginPage: Login exitoso, redirigiendo...");
+    console.log("LoginPage: Login exitoso, verificando modelos...");
+    
+    // Check if models need to be downloaded
+    try {
+      const cached = await checkModelsCached();
+      if (!cached) {
+        setIsPreparingModels(true);
+        await downloadModelsWithProgress((progress) => {
+          setModelProgress(progress);
+        });
+      }
+    } catch (err) {
+      console.error("Error al preparar modelos:", err);
+      // We continue anyway, they will be loaded on demand if fail
+    }
+
     startTransition(() => {
       router.push("/");
     });
@@ -148,6 +168,51 @@ export default function LoginPage() {
           </div>
         </div>
       </div>
+
+      {/* Model Preparation Overlay */}
+      {isPreparingModels && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-slate-900/95 backdrop-blur-md animate-in fade-in duration-500">
+          <div className="max-w-md w-full space-y-8 text-center">
+            <div className="relative mx-auto w-24 h-24">
+              <div className="absolute inset-0 border-4 border-slate-800 rounded-full" />
+              <div 
+                className="absolute inset-0 border-4 border-white rounded-full border-t-transparent animate-spin" 
+                style={{ animationDuration: '2s' }}
+              />
+              <div className="absolute inset-0 flex items-center justify-center">
+                <Telescope className="h-10 w-10 text-white" strokeWidth={1.5} />
+              </div>
+            </div>
+
+            <div className="space-y-2">
+              <h3 className="text-xl font-bold text-white tracking-tight">Preparando Herramientas de Análisis</h3>
+              <p className="text-slate-400 text-sm font-medium">
+                Descargando modelos de inteligencia artificial para el procesamiento de imágenes solares.
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div className="h-1.5 w-full bg-slate-800 rounded-full overflow-hidden">
+                <div 
+                  className="h-full bg-white transition-all duration-300 ease-out"
+                  style={{ width: `${modelProgress?.progress || 0}%` }}
+                />
+              </div>
+              
+              <div className="flex justify-between items-center text-[10px] font-black uppercase tracking-[0.2em]">
+                <span className="text-slate-400">{modelProgress?.modelName || "Iniciando..."}</span>
+                <span className="text-white">{Math.round(modelProgress?.progress || 0)}%</span>
+              </div>
+
+              <div className="pt-4">
+                <p className="text-[10px] text-slate-500 font-bold uppercase tracking-widest leading-relaxed max-w-[280px] mx-auto">
+                  Esta operación se realiza solo una vez y optimiza significativamente el rendimiento de la clasificación.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
