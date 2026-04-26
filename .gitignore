@@ -40,3 +40,4 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+public/models/clasification_model_convnextv2tinny/sunscc_3head.onnx
