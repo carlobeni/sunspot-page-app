@@ -28,16 +28,23 @@ import {
   Save,
   User,
   Briefcase,
-  MapPin
+  MapPin,
+  ClipboardList,
+  Lock
 } from "lucide-react";
 import SolarDiskViewer from "../components/SolarDiskViewer";
+import { useAuth } from "../lib/AuthContext";
 import html2canvas from "html2canvas";
 import { jsPDF } from "jspdf";
 function cn(...inputs: any[]) {
     return inputs.filter(Boolean).join(' ');
 }
 
+
+import Head from "next/head";
+
 export default function RecordsPage() {
+  const { isGuest } = useAuth();
   const [loading, setLoading] = useState(true);
   const [downloading, setDownloading] = useState(false);
   const [data, setData] = useState<any>(null);
@@ -45,18 +52,33 @@ export default function RecordsPage() {
   const [selectedDate, setSelectedDate] = useState<string>("");
   const [viewDate, setViewDate] = useState(new Date()); 
   const reportRef = useRef<HTMLDivElement>(null);
+
+  const [fetchedYears, setFetchedYears] = useState<Record<number, string[]>>({});
+  const [loadingDates, setLoadingDates] = useState(false);
+
+  // Fetch initial data (stats)
   useEffect(() => {
-    const fetchDates = async () => {
+    const fetchStats = async () => {
       try {
         const res = await fetch('/api/dataset-stats');
         if (!res.ok) throw new Error("Failed to fetch statistics");
         const jsonData = await res.json();
         setData(jsonData);
         
+        // Initial dates from stats
         if (jsonData.availableDates?.length > 0) {
             const sorted = [...jsonData.availableDates].sort((a,b) => b.localeCompare(a));
             setSelectedDate(sorted[0]);
             setViewDate(new Date(sorted[0]));
+            
+            // Map the initial dates to their respective years
+            const initialYears: Record<number, string[]> = {};
+            jsonData.availableDates.forEach((d: string) => {
+               const y = parseInt(d.split('-')[0]);
+               if (!initialYears[y]) initialYears[y] = [];
+               initialYears[y].push(d);
+            });
+            setFetchedYears(initialYears);
         }
       } catch (err) {
         console.error(err);
@@ -64,8 +86,41 @@ export default function RecordsPage() {
         setLoading(false);
       }
     };
-    fetchDates();
+    fetchStats();
   }, []);
+
+  // Fetch dates when year changes
+  useEffect(() => {
+    const year = viewDate.getFullYear();
+    if (fetchedYears[year] || loading) return;
+
+    const fetchYearDates = async () => {
+      setLoadingDates(true);
+      try {
+        const res = await fetch(`/api/available-dates?year=${year}`);
+        if (!res.ok) throw new Error("Failed to fetch dates for year");
+        const { availableDates } = await res.json();
+        setFetchedYears(prev => ({ ...prev, [year]: availableDates }));
+        
+        // Auto-select the most recent date for this year and MOVE the view to that month
+        if (availableDates.length > 0) {
+            const mostRecent = availableDates[0]; // Already sorted desc
+            setSelectedDate(mostRecent);
+            setViewDate(new Date(mostRecent));
+        }
+      } catch (err) {
+        console.error(err);
+      } finally {
+        setLoadingDates(false);
+      }
+    };
+    fetchYearDates();
+  }, [viewDate.getFullYear(), loading]);
+
+  // Combine all available dates
+  const allAvailableDates = useMemo(() => {
+    return Array.from(new Set(Object.values(fetchedYears).flat())).sort((a, b) => b.localeCompare(a));
+  }, [fetchedYears]);
 
   const years = useMemo(() => {
     const currentYear = new Date().getFullYear();
@@ -108,7 +163,7 @@ export default function RecordsPage() {
         days.push({
             day: d,
             dateStr,
-            hasRecord: data?.availableDates?.includes(dateStr)
+            hasRecord: allAvailableDates.includes(dateStr)
         });
     }
     return days;
@@ -122,6 +177,30 @@ export default function RecordsPage() {
         if (!res.ok) throw new Error("Could not fetch data for PDF");
         const solarData = await res.json();
         
+        const imgUrl = `/api/proxy-image?url=${encodeURIComponent(solarData.fullDiskUrl)}`;
+        const imgRes = await fetch(imgUrl);
+        const imgBlob = await imgRes.blob();
+        solarData.base64Image = await new Promise<string>((resolve) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result as string);
+            reader.readAsDataURL(imgBlob);
+        });
+
+        if (solarData.crops && solarData.crops.length > 0) {
+            await Promise.all(solarData.crops.map(async (crop: any) => {
+                if (crop.cropUrl) {
+                    const cUrl = `/api/proxy-image?url=${encodeURIComponent(crop.cropUrl)}`;
+                    const cRes = await fetch(cUrl);
+                    const cBlob = await cRes.blob();
+                    crop.base64Image = await new Promise<string>((resolve) => {
+                        const reader = new FileReader();
+                        reader.onloadend = () => resolve(reader.result as string);
+                        reader.readAsDataURL(cBlob);
+                    });
+                }
+            }));
+        }
+
         // Update state so the hidden template renders with this data
         setSelectedSolarData(solarData);
         
@@ -130,7 +209,7 @@ export default function RecordsPage() {
         if (!reportContainer) throw new Error("Report container not found");
         
         // Wait for images to load if any
-        await new Promise(r => setTimeout(r, 1000));
+        await new Promise(r => setTimeout(r, 2500));
 
         const summaryElement = document.getElementById("record-report-summary");
         const tableElement = document.getElementById("record-report-table");
@@ -207,16 +286,19 @@ export default function RecordsPage() {
   );
 
   return (
-    <div className="p-4 pt-20 lg:p-8 max-w-screen-2xl mx-auto min-h-screen flex flex-col bg-slate-50 text-slate-900">
+    <div className="p-4 pt-20 lg:p-8 lg:pt-24 max-w-screen-2xl mx-auto min-h-screen flex flex-col bg-slate-50 text-slate-900">
+      <Head>
+        <title>Registros | Plataforma de Investigación Solar</title>
+      </Head>
       {/* Header */}
-      <div className="mb-6 flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-slate-200 pb-4">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
-          <h1 className="text-xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
-             <Calendar className="h-6 w-6 md:h-8 md:w-8 text-slate-800" />
-             Archivos
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-3 tracking-tight">
+            <ClipboardList className="h-7 w-7 text-slate-800 shrink-0" strokeWidth={1.5} />
+            Registro de Fotósfera
           </h1>
-          <p className="text-slate-500 mt-1.5 text-sm md:text-base font-medium max-w-xl hidden md:block">
-            Archivo histórico de observaciones. Los registros disponibles se indican con marcas en el calendario.
+          <p className="text-slate-500 mt-2 text-sm font-medium hidden sm:block">
+            Archivo centralizado de observaciones y <span className="text-slate-900 font-bold">auditoría de actividad solar</span>.
           </p>
         </div>
       </div>
@@ -224,99 +306,105 @@ export default function RecordsPage() {
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
         {/* Calendar Column */}
         <div className="lg:col-span-1 space-y-6">
-          <div className="bg-white p-4 sm:p-6 rounded-xl border border-slate-200 shadow-sm flex flex-col h-full">
-            <div className="space-y-4 mb-6">
-                <div className="flex gap-2">
-                    <select 
-                        value={viewDate.getMonth()} 
-                        onChange={(e) => handleMonthChange(parseInt(e.target.value))}
-                        className="w-full bg-white border border-slate-200 shadow-sm rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-slate-800 transition-all appearance-none text-center"
-                    >
-                        {months.map((m, i) => <option key={m} value={i}>{m}</option>)}
-                    </select>
-                    <select 
-                        value={viewDate.getFullYear()} 
-                        onChange={(e) => handleYearChange(parseInt(e.target.value))}
-                        className="w-full bg-white border border-slate-200 shadow-sm rounded-lg px-3 py-2 text-sm font-semibold text-slate-900 outline-none focus:border-slate-800 transition-all appearance-none text-center"
-                    >
-                        {years.map(y => <option key={y} value={y}>{y}</option>)}
-                    </select>
-                </div>
+          <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm flex flex-col h-full">
+            <div className="flex items-center justify-between mb-8 pb-3 border-b border-slate-50">
+               <div className="flex items-center gap-2">
+                 <Calendar className="h-4 w-4 text-slate-800" />
+                 <h3 className="text-[10px] font-black text-slate-400 uppercase tracking-widest">Selector Temporal</h3>
+               </div>
+               {loadingDates && (
+                 <Loader2 className="h-3 w-3 text-emerald-500 animate-spin" />
+               )}
+            </div>
+            
+            <div className="space-y-3 mb-8">
+                <select 
+                    value={viewDate.getMonth()} 
+                    onChange={(e) => handleMonthChange(parseInt(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:border-slate-800 transition-all appearance-none cursor-pointer"
+                >
+                    {months.map((m, i) => <option key={m} value={i}>{m}</option>)}
+                </select>
+                <select 
+                    value={viewDate.getFullYear()} 
+                    onChange={(e) => handleYearChange(parseInt(e.target.value))}
+                    className="w-full bg-slate-50 border border-slate-200 rounded-lg px-4 py-2.5 text-xs font-bold text-slate-900 outline-none focus:border-slate-800 transition-all appearance-none cursor-pointer"
+                >
+                    {years.map(y => <option key={y} value={y}>{y}</option>)}
+                </select>
             </div>
             
             <div className="grid grid-cols-7 gap-1 mb-6">
                 {['D','L','M','M','J','V','S'].map((d, i) => (
-                    <div key={i} className="text-xs font-bold text-slate-400 text-center py-2">{d}</div>
+                    <div key={i} className="text-[10px] font-black text-slate-300 text-center py-2 uppercase">{d}</div>
                 ))}
                 {calendarDays.map((d, i) => {
                     if (!d) return <div key={`empty-${i}`} className="aspect-square" />;
                     const isSelected = selectedDate === d.dateStr;
+                    const hasRecord = d.hasRecord;
                     return (
                         <button 
                             key={i} 
-                            disabled={!d.hasRecord}
+                            disabled={!hasRecord}
                             onClick={() => setSelectedDate(d.dateStr)}
                             className={cn(
-                                "aspect-square flex flex-col items-center justify-center text-sm transition-all relative font-bold h-9 w-9 mx-auto rounded-full",
-                                d.hasRecord 
+                                "aspect-square flex flex-col items-center justify-center text-xs transition-all relative font-bold h-8 w-8 mx-auto rounded-lg",
+                                hasRecord 
                                     ? isSelected
-                                        ? "bg-slate-900 text-white shadow-lg scale-110"
-                                        : "text-slate-700 hover:bg-slate-100"
-                                    : "text-slate-300 pointer-events-none"
+                                        ? "bg-slate-900 text-white shadow-md scale-105"
+                                        : "text-slate-700 hover:bg-slate-100 border border-slate-100"
+                                    : "text-slate-200 pointer-events-none"
                             )}
                         >
                             <span className="relative z-10">{d.day}</span>
-                            {d.hasRecord && !isSelected && (
-                                <span className="absolute bottom-1 w-1 h-1 bg-slate-500 rounded-full" />
+                            {hasRecord && !isSelected && (
+                                <span className="absolute bottom-1 w-1 h-1 bg-emerald-500 rounded-full" />
                             )}
                         </button>
                     );
                 })}
             </div>
-            
-
           </div>
-
-
         </div>
 
         {/* Viewer Column */}
         <div className="lg:col-span-3 flex flex-col">
-            <div className="flex-1 animate-in fade-in flex flex-col relative h-full">
+            <div className="flex-1 flex flex-col relative h-full bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden p-6">
                 <SolarDiskViewer 
-                    availableDates={data?.availableDates || []} 
+                    availableDates={allAvailableDates} 
                     date={selectedDate}
                 />
                 
                 {/* Download Button */}
-                <div className="mt-6 flex justify-start sm:absolute sm:top-6 sm:right-6 sm:mt-0">
+                <div className="mt-6 flex justify-start sm:absolute sm:top-8 sm:right-8 sm:mt-0">
                      <button 
                         onClick={handleDownloadPDF}
-                        disabled={downloading}
-                        className="flex items-center gap-2 px-4 py-2 bg-white text-slate-700 border border-slate-200 hover:border-slate-800 hover:text-slate-900 rounded-lg text-sm font-semibold hover:bg-slate-50 transition-all active:scale-95 group disabled:opacity-50 shadow-sm"
+                        disabled={downloading || isGuest}
+                        className="flex items-center gap-3 px-6 py-2.5 bg-slate-900 text-white rounded-lg text-xs font-bold uppercase tracking-widest hover:bg-slate-800 transition-all active:scale-95 disabled:opacity-50 shadow-lg"
                      >
                         {downloading ? (
-                            <div className="h-4 w-4 border-2 border-slate-200 border-t-slate-800 rounded-sm animate-spin" />
+                            <div className="h-4 w-4 border-2 border-slate-500 border-t-white rounded-sm animate-spin" />
+                        ) : isGuest ? (
+                            <Lock className="h-4 w-4" />
                         ) : (
-                            <FileText className="h-4 w-4 text-slate-400 group-hover:text-slate-800 transition-colors" />
+                            <FileText className="h-4 w-4" />
                         )}
-                        {downloading ? "Generando..." : "Exportar PDF"}
+                        {downloading ? "Generando..." : isGuest ? "Exportar Bloqueado" : "Exportar Registro"}
                      </button>
                 </div>
             </div>
         </div>
       </div>
 
-    <div id="hidden-report-container" className="fixed left-[-9999px] top-0 w-[1024px] pointer-events-none opacity-0">
+    <div id="hidden-report-container" className="fixed left-[-9999px] top-0 w-[1024px] z-[-50] bg-white">
         {selectedSolarData && selectedDate && (
             <div className="flex flex-col gap-10 bg-white p-10">
                 <div id="record-report-summary" className="bg-[#ffffff] rounded-xl border border-[#e2e8f0] p-10 flex flex-col text-[#0f172a]">
                     <div className="flex justify-between border-b border-[#e2e8f0] pb-6 mb-8 gap-4">
-                        <div className="flex items-center gap-4">
-                            <div className="w-11 h-11 bg-[#0f172a] border border-[#1e293b] rounded-md flex items-center justify-center text-white font-black text-sm shadow-sm">SOL</div>
+                        <div className="flex items-center gap-2">
                             <div>
                                 <h2 className="text-xl font-bold text-[#0f172a]">Informe de Registro Heliográfico</h2>
-                                <p className="text-[11px] font-semibold text-[#94a3b8] mt-0.5 uppercase tracking-widest">Heliographic Research Center — FIUNA</p>
+                                <p className="text-[10px] font-semibold text-[#94a3b8] mt-0.5 uppercase tracking-widest">Plataforma de Investigación Solar</p>
                             </div>
                         </div>
                         <div className="text-right">
@@ -328,20 +416,26 @@ export default function RecordsPage() {
                     <div className="mb-10 space-y-4">
                         <h4 className="text-[10px] font-black border-b border-[#f1f5f9] pb-2 text-[#64748b] uppercase tracking-widest">Resumen Visual del Disco</h4>
                         <div className="aspect-square max-w-sm mx-auto bg-black rounded-full overflow-hidden border-4 border-[#f1f5f9] relative">
-                            <img src={`https://vps-4530064-x.dattaweb.com/full_disk/${selectedDate}.jpg`} alt="Full Disk" className="w-full h-full object-cover" crossOrigin="anonymous"/>
+                            <img src={selectedSolarData.base64Image} alt="Full Disk" className="w-full h-full object-cover" />
                             <svg viewBox="0 0 1024 1024" className="absolute inset-0 w-full h-full opacity-40">
-                                {selectedSolarData.crops?.map((d: any, idx: number) => (
-                                    <rect 
-                                        key={idx} 
-                                        x={d.x - d.w/2} 
-                                        y={d.y - d.h/2} 
-                                        width={d.w} 
-                                        height={d.h} 
-                                        fill="none" 
-                                        stroke="#22c55e" 
-                                        strokeWidth="4" 
-                                    />
-                                ))}
+                                {selectedSolarData.crops?.map((d: any, idx: number) => {
+                                    const x = d.x_center_px || 0;
+                                    const y = d.y_center_px || 0;
+                                    const w = d.orig_w_px || 50;
+                                    const h = d.orig_h_px || 50;
+                                    return (
+                                        <rect 
+                                            key={idx} 
+                                            x={x - w/2} 
+                                            y={y - h/2} 
+                                            width={w} 
+                                            height={h} 
+                                            fill="none" 
+                                            stroke="#22c55e" 
+                                            strokeWidth="4" 
+                                        />
+                                    );
+                                })}
                             </svg>
                         </div>
                     </div>
@@ -389,6 +483,7 @@ export default function RecordsPage() {
                             <table className="w-full text-left border-collapse min-w-[600px]">
                                 <thead>
                                     <tr className="text-[10px] font-black text-[#94a3b8] border-b border-[#e2e8f0] bg-[#f8fafc] uppercase tracking-widest">
+                                        <th className="p-4">Crop (224px)</th>
                                         <th className="p-4">Ref ID</th>
                                         <th className="p-4">Latitud (°)</th>
                                         <th className="p-4">Longitud (°)</th>
@@ -399,6 +494,15 @@ export default function RecordsPage() {
                                 <tbody className="divide-y divide-[#f1f5f9] text-sm bg-white">
                                     {selectedSolarData.crops?.map((crop: any, idx: number) => (
                                         <tr key={idx}>
+                                            <td className="p-4">
+                                               <div className="w-16 h-16 bg-black rounded border border-[#e2e8f0] overflow-hidden">
+                                                 {crop.base64Image ? (
+                                                     <img src={crop.base64Image} className="w-full h-full object-contain" />
+                                                 ) : (
+                                                     <div className="w-full h-full flex items-center justify-center text-white text-[10px]">No image</div>
+                                                 )}
+                                               </div>
+                                            </td>
                                             <td className="p-4 font-mono text-[10px]">SPT-{idx + 1}</td>
                                             <td className="p-4 font-bold">{crop.lat.toFixed(2)}</td>
                                             <td className="p-4 font-bold">{crop.lon.toFixed(2)}</td>
@@ -413,16 +517,8 @@ export default function RecordsPage() {
                         </div>
                     </div>
                     
-                    <div className="mt-12 pt-6 border-t border-[#f1f5f9] flex justify-between items-end gap-6">
-                        <div className="space-y-1.5">
-                            <p className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest">Archivo Histórico</p>
-                            <div className="h-px w-28 bg-[#e2e8f0]" />
-                            <p className="text-[10px] font-semibold text-[#94a3b8]">Base de Datos Heliográfica — FIUNA</p>
-                        </div>
-                        <div className="text-right">
-                             <p className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest mb-2">Sello de Archivo</p>
-                             <div className="h-px w-32 bg-[#0f172a] ml-auto" />
-                        </div>
+                    <div className="mt-12 pt-6 border-t border-[#f1f5f9] flex justify-center">
+                        {/* Redundant institutional text removed */}
                     </div>
                 </div>
             </div>

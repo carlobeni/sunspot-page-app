@@ -1,4 +1,5 @@
 import { useRouter } from "next/router";
+import Head from "next/head";
 import { useEffect, useState, useRef } from "react";
 import {
   Telescope,
@@ -21,7 +22,9 @@ import {
   Lock,
   ChevronRight,
   Focus,
+  ShieldAlert,
 } from "lucide-react";
+import { useAuth } from "../lib/AuthContext";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { runYoloInference } from "../lib/yolo-inference";
@@ -36,11 +39,11 @@ function cn(...inputs: ClassValue[]) {
 type Tab = "imagen" | "agrupamiento" | "clasificacion" | "informe";
 
 // Defines which tabs are unlocked based on pipeline state
-function getUnlockedTabs(image: string | null, detections: any[], confirmed: boolean): Tab[] {
+function getUnlockedTabs(image: string | null, detections: any[], confirmed: boolean, isGuest?: boolean): Tab[] {
   const unlocked: Tab[] = ["imagen"];
   if (image) unlocked.push("agrupamiento");
   if (image && detections.length > 0) unlocked.push("clasificacion");
-  if (image && detections.length > 0 && confirmed) unlocked.push("informe");
+  if (image && detections.length > 0 && confirmed && !isGuest) unlocked.push("informe");
   return unlocked;
 }
 
@@ -50,13 +53,13 @@ export default function ObservatoryPage() {
   const [image, setImage] = useState<string | null>(null);
   const [detections, setDetections] = useState<any[]>([]);
   const [selectedDetection, setSelectedDetection] = useState<number | null>(null);
-  const [viewBox] = useState({ w: 1024, h: 1024 });
+  const [viewBox, setViewBox] = useState({ w: 1024, h: 1024 });
   const [confirmed, setConfirmed] = useState(false);
 
   const [metadata, setMetadata] = useState({
     professional: "Carlos Benítez",
     position: "Investigador Principal",
-    source: 'Observatorio Astrónomico "Prof. Alexis Troche Boggino"',
+    source: 'Registro Digital de Fotósfera Solar',
     date: new Date().toISOString().split("T")[0],
     time: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
     location: "Asunción, Paraguay",
@@ -65,7 +68,8 @@ export default function ObservatoryPage() {
   const [showExitModal, setShowExitModal] = useState(false);
   const [pendingUrl, setPendingUrl] = useState<string | null>(null);
 
-  const unlockedTabs = getUnlockedTabs(image, detections, confirmed);
+  const { isGuest } = useAuth();
+  const unlockedTabs = getUnlockedTabs(image, detections, confirmed, isGuest);
   const router = useRouter();
 
   useEffect(() => {
@@ -98,12 +102,19 @@ export default function ObservatoryPage() {
 
   const handleImageSet = (img: string | null) => {
     setImage(img);
-    if (img) setActiveTab("agrupamiento");
-    else {
+    if (img) {
+      const i = new window.Image();
+      i.src = img;
+      i.onload = () => {
+        setViewBox({ w: i.width, h: i.height });
+        setActiveTab("agrupamiento");
+      };
+    } else {
       setDetections([]);
       setActiveTab("imagen");
     }
   };
+
 
   const handleInference = async () => {
     if (!image) return;
@@ -158,25 +169,28 @@ export default function ObservatoryPage() {
   };
 
   const STEPS: { id: Tab; label: string; icon: any; desc: string }[] = [
-    { id: "imagen", label: "Imagen", icon: ImageIcon, desc: "Cargar imagen solar" },
-    { id: "agrupamiento", label: "Agrupamiento", icon: Focus, desc: "Detección YOLO" },
-    { id: "clasificacion", label: "Clasificación", icon: Tags, desc: "Análisis ConvNextV2" },
-    { id: "informe", label: "Informe", icon: FileText, desc: "Generar reporte" },
+    { id: "imagen", label: "Carga", icon: ImageIcon, desc: "Origen de imagen" },
+    { id: "agrupamiento", label: "Detección", icon: Focus, desc: "Localización asistida" },
+    { id: "clasificacion", label: "Análisis", icon: Tags, desc: "Clasificación profunda" },
+    { id: "informe", label: "Registro", icon: FileText, desc: "Generación de informe" },
   ];
 
   const stepIndex = STEPS.findIndex((s) => s.id === activeTab);
 
   return (
     <div className="p-4 pt-20 lg:p-8 lg:pt-24 max-w-screen-2xl mx-auto min-h-screen flex flex-col bg-slate-50 text-slate-900">
+      <Head>
+        <title>Observatorio | Plataforma de Investigación Solar</title>
+      </Head>
       {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200 pb-5">
+      <div className="mb-8 flex flex-col sm:flex-row sm:items-end justify-between gap-4 border-b border-slate-200 pb-6">
         <div>
-          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-3">
-            <Telescope className="h-7 w-7 text-slate-700 shrink-0" />
-            Observatorio
+          <h1 className="text-2xl md:text-3xl font-bold text-slate-900 flex items-center gap-3 tracking-tight">
+            <Telescope className="h-7 w-7 text-slate-800 shrink-0" strokeWidth={1.5} />
+            Análisis de Fotósfera
           </h1>
-          <p className="text-slate-500 mt-1.5 text-sm font-medium hidden sm:block">
-            Captura y análisis de registros solares en tiempo real.
+          <p className="text-slate-500 mt-2 text-sm font-medium hidden sm:block">
+            Clasificación y registro mediante <span className="text-slate-900 font-bold">detección automática asistida</span>.
           </p>
         </div>
       </div>
@@ -367,6 +381,7 @@ export default function ObservatoryPage() {
             selectedDetection={selectedDetection}
             setSelectedDetection={setSelectedDetection}
             viewBox={viewBox}
+            isGuest={isGuest}
             onCommit={() => {
               setConfirmed(true);
               setActiveTab("informe");
@@ -421,6 +436,95 @@ function ImageTab({ metadata, setMetadata, image, setImage }: any) {
   const [gain, setGain] = useState(50);
   const [exposure, setExposure] = useState(20);
   const [fullscreen, setFullscreen] = useState(false);
+
+  const [validatingImage, setValidatingImage] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+
+  const uploadContainerRef = useRef<HTMLDivElement>(null);
+  const [highlightUpload, setHighlightUpload] = useState(false);
+
+  useEffect(() => {
+    if (mode === "upload" && uploadContainerRef.current) {
+      uploadContainerRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      setHighlightUpload(true);
+      const timer = setTimeout(() => setHighlightUpload(false), 1500);
+      return () => clearTimeout(timer);
+    }
+  }, [mode]);
+
+  const validateSolarDisk = (file: File): Promise<{ isValid: boolean, errorMsg?: string }> => {
+    return new Promise((resolve) => {
+      const img = new Image();
+      img.src = URL.createObjectURL(file);
+      img.onload = () => {
+        const w = img.width;
+        const h = img.height;
+
+        if (w < 640 || h < 640) {
+           return resolve({ isValid: false, errorMsg: "La resolución mínima requerida es de 640x640 píxeles." });
+        }
+        if (w > 4096 || h > 4096) {
+           return resolve({ isValid: false, errorMsg: "La resolución máxima permitida es 4K (4096x4096 píxeles)." });
+        }
+
+        const canvas = document.createElement("canvas");
+        const ctx = canvas.getContext("2d");
+        if (!ctx) return resolve({ isValid: false, errorMsg: "Error de procesamiento interno." });
+
+        canvas.width = w;
+        canvas.height = h;
+        ctx.drawImage(img, 0, 0);
+        
+        const points = [
+          { x: 5, y: 5 },
+          { x: w - 5, y: 5 },
+          { x: 5, y: h - 5 },
+          { x: w - 5, y: h - 5 },
+          { x: Math.floor(w/2), y: 5 },
+          { x: Math.floor(w/2), y: h - 5 },
+          { x: 5, y: Math.floor(h/2) },
+          { x: w - 5, y: Math.floor(h/2) }
+        ];
+
+        let blackCount = 0;
+        points.forEach(p => {
+          const pixel = ctx.getImageData(p.x, p.y, 1, 1).data;
+          const isBlack = pixel[0] < 30 && pixel[1] < 30 && pixel[2] < 30;
+          if (isBlack) blackCount++;
+        });
+
+        const centerPixel = ctx.getImageData(Math.floor(w/2), Math.floor(h/2), 1, 1).data;
+        const centerIsBrighter = centerPixel[0] > 20 || centerPixel[1] > 20 || centerPixel[2] > 20;
+
+        if (blackCount >= 6 && centerIsBrighter) {
+            resolve({ isValid: true });
+        } else {
+            resolve({ isValid: false, errorMsg: "La imagen debe ser un disco solar rodeado por un fondo oscuro." });
+        }
+      };
+      img.onerror = () => resolve({ isValid: false, errorMsg: "El archivo no es una imagen válida." });
+    });
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    setValidatingImage(true);
+    setUploadError(null);
+    
+    await new Promise(r => setTimeout(r, 1500));
+
+    const result = await validateSolarDisk(file);
+    
+    setValidatingImage(false);
+
+    if (result.isValid) {
+      setImage(URL.createObjectURL(file));
+    } else {
+      setUploadError(result.errorMsg || "Error al validar la imagen.");
+    }
+  };
 
   return (
     <div className="p-4 sm:p-6 lg:p-8 flex flex-col h-full bg-slate-50">
@@ -521,7 +625,18 @@ function ImageTab({ metadata, setMetadata, image, setImage }: any) {
         <div className="flex-1 bg-white rounded-xl border border-slate-200 shadow-sm relative overflow-hidden flex items-center justify-center min-h-[300px] sm:min-h-[400px] lg:min-h-0">
           {image ? (
             <div className="relative w-full h-full p-4 sm:p-8 flex items-center justify-center">
-              <div className="relative w-full max-w-[360px] sm:max-w-[480px] aspect-square rounded-full overflow-hidden border border-slate-200 bg-black shadow-md">
+              <div className="relative w-full max-w-[360px] sm:max-w-[480px] aspect-square rounded-full overflow-hidden border border-slate-200 bg-black shadow-inner flex items-center justify-center">
+                {/* Subtle Heliographic Overlay */}
+                <div className="absolute inset-0 z-10 pointer-events-none opacity-20">
+                  <svg className="w-full h-full" viewBox="0 0 200 200">
+                    {[-60, -30, 0, 30, 60].map(lat => (
+                      <ellipse key={lat} cx="100" cy={100 - 98 * Math.sin(lat * Math.PI / 180)} rx={98 * Math.cos(lat * Math.PI / 180)} ry={98 * Math.cos(lat * Math.PI / 180) * 0.15} stroke="white" strokeWidth="0.2" strokeDasharray="1 4" fill="none" />
+                    ))}
+                    {[-60, -30, 0, 30, 60].map(lon => (
+                      <ellipse key={lon} cx="100" cy="100" rx={98 * Math.sin(lon * Math.PI / 180)} ry={98} stroke="white" strokeWidth="0.2" strokeDasharray="1 4" fill="none" />
+                    ))}
+                  </svg>
+                </div>
                 <img src={image} alt="Preview" className="w-full h-full object-cover" />
               </div>
               <button
@@ -537,23 +652,41 @@ function ImageTab({ metadata, setMetadata, image, setImage }: any) {
               <p className="text-slate-400 text-sm font-semibold">Selecciona un origen para comenzar</p>
             </div>
           ) : mode === "upload" ? (
-            <div className="flex flex-col items-center gap-5 p-6 text-center w-full max-w-sm">
-              <label className="w-28 h-28 sm:w-36 sm:h-36 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center hover:border-slate-700 bg-slate-50 hover:bg-slate-100 transition-all cursor-pointer group shadow-sm">
-                <Upload className="h-7 w-7 text-slate-300 group-hover:text-slate-700 transition-colors mb-2" />
-                <span className="text-xs text-slate-400 font-bold group-hover:text-slate-700 transition-colors">Examinar</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) setImage(URL.createObjectURL(file));
-                  }}
-                />
-              </label>
+            <div 
+              ref={uploadContainerRef}
+              className={cn(
+                "flex flex-col items-center gap-5 p-6 text-center w-full max-w-sm rounded-2xl transition-all duration-500",
+                highlightUpload ? "bg-white shadow-xl ring-2 ring-slate-800 ring-offset-4 scale-[1.02]" : "bg-transparent"
+              )}
+            >
+              {uploadError && (
+                <div className="w-full bg-red-50 border border-red-100 text-red-600 px-4 py-3 rounded-lg text-[10px] font-bold uppercase tracking-wider shadow-sm">
+                  {uploadError}
+                </div>
+              )}
+              {validatingImage ? (
+                <div className="w-28 h-28 sm:w-36 sm:h-36 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center bg-slate-50 relative overflow-hidden">
+                    <div className="absolute inset-0 bg-slate-900/10 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 animate-in fade-in duration-200">
+                        <div className="h-6 w-6 border-2 border-slate-400 border-t-slate-800 rounded-md animate-spin" />
+                        <span className="text-[10px] font-black text-slate-800 uppercase tracking-tighter">Validando...</span>
+                    </div>
+                </div>
+              ) : (
+                <label className="w-28 h-28 sm:w-36 sm:h-36 rounded-xl border-2 border-dashed border-slate-300 flex flex-col items-center justify-center hover:border-slate-700 bg-slate-50 hover:bg-slate-100 transition-all cursor-pointer group shadow-sm">
+                  <Upload className="h-7 w-7 text-slate-300 group-hover:text-slate-700 transition-colors mb-2" />
+                  <span className="text-xs text-slate-400 font-bold group-hover:text-slate-700 transition-colors">Examinar</span>
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={handleFileUpload}
+                  />
+                </label>
+              )}
               <div className="space-y-2">
                 <p className="text-slate-700 text-sm font-bold">Cargar registro histórico</p>
                 <div className="flex flex-wrap gap-2 justify-center">
+                  <span className="px-2 py-1 bg-slate-100 rounded text-xs font-semibold text-slate-500 border border-slate-200">MIN: 640x640</span>
                   <span className="px-2 py-1 bg-slate-100 rounded text-xs font-semibold text-slate-500 border border-slate-200">MAX: 4K</span>
                   <span className="px-2 py-1 bg-slate-100 rounded text-xs font-semibold text-slate-500 border border-slate-200">RAW / JPG</span>
                 </div>
@@ -995,7 +1128,7 @@ const MAGNETIC_CLASSES = [
 /* ─────────────────────────────────────────────── */
 /*  CLASSIFICATION TAB (STAGE 2)                   */
 /* ─────────────────────────────────────────────── */
-function ClassificationTab({ image, detections, setDetections, selectedDetection, setSelectedDetection, viewBox, onCommit }: any) {
+function ClassificationTab({ image, detections, setDetections, selectedDetection, setSelectedDetection, viewBox, onCommit, isGuest }: any) {
   const selectedData = detections.find((d: any) => d.id === selectedDetection);
   
   useEffect(() => {
@@ -1115,7 +1248,7 @@ function ClassificationTab({ image, detections, setDetections, selectedDetection
                 {/* Loading Overlay */}
                 {loadingInference && selectedDetection === d.id && (
                   <div className="absolute inset-0 bg-slate-900/60 backdrop-blur-[2px] flex flex-col items-center justify-center gap-2 animate-in fade-in duration-200">
-                    <Loader2 className="h-6 w-6 text-white animate-spin" />
+                    <div className="h-6 w-6 border-2 border-white/20 border-t-white rounded-md animate-spin" />
                     <span className="text-[10px] font-black text-white uppercase tracking-tighter">Analizando</span>
                   </div>
                 )}
@@ -1155,7 +1288,7 @@ function ClassificationTab({ image, detections, setDetections, selectedDetection
                     </p>
                     {loadingInference ? (
                       <div className="flex items-center gap-2 py-1">
-                        <Loader2 className="h-3 w-3 animate-spin text-slate-400" />
+                        <div className="h-3 w-3 border-2 border-slate-200 border-t-slate-400 rounded-sm animate-spin" />
                         <span className="text-[10px] font-bold text-slate-400">Analizando...</span>
                       </div>
                     ) : currentResult ? (
@@ -1330,18 +1463,37 @@ function ClassificationTab({ image, detections, setDetections, selectedDetection
             )}
 
             <div className="pt-4 border-t border-slate-100 space-y-2 mt-auto">
+              {isGuest && (
+                <div className="bg-slate-50 border border-slate-200 p-3 rounded-lg mb-2">
+                  <p className="text-[10px] font-bold text-slate-500 uppercase tracking-widest flex items-center gap-2">
+                    <Lock className="h-3 w-3" /> Modo Invitado
+                  </p>
+                  <p className="text-[10px] text-slate-400 mt-1 font-medium italic">
+                    La generación de informes y el registro oficial requieren una cuenta institucional validada.
+                  </p>
+                </div>
+              )}
               <button
-                disabled={detections.length === 0}
+                disabled={detections.length === 0 || isGuest}
                 onClick={onCommit}
                 className={cn(
                   "w-full py-3 rounded-lg text-sm font-bold flex items-center justify-center gap-2 transition-all",
-                  detections.length > 0
+                  detections.length > 0 && !isGuest
                     ? "bg-slate-800 text-white hover:bg-slate-900 shadow-sm"
                     : "bg-slate-100 text-slate-300 cursor-not-allowed border border-slate-200"
                 )}
               >
-                <Save className="h-4 w-4" />
-                Confirmar y Generar Informe
+                {isGuest ? (
+                  <>
+                    <Lock className="h-4 w-4" />
+                    Registro Bloqueado
+                  </>
+                ) : (
+                  <>
+                    <Save className="h-4 w-4" />
+                    Confirmar y Generar Informe
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -1456,11 +1608,10 @@ function ReportTab({ metadata, detections, image, viewBox }: any) {
         <div id="report-summary" className="bg-[#ffffff] rounded-xl border border-[#e2e8f0] shadow-sm p-6 sm:p-10 flex flex-col text-[#0f172a]">
         {/* Header */}
         <div className="flex flex-col sm:flex-row justify-between border-b border-[#e2e8f0] pb-6 mb-8 gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-11 h-11 bg-[#0f172a] border border-[#1e293b] rounded-md flex items-center justify-center text-white font-black text-sm shadow-sm">SOL</div>
+          <div className="flex items-center gap-2">
             <div>
               <h2 className="text-xl font-bold text-[#0f172a]">Informe de Observación Heliográfica</h2>
-              <p className="text-[11px] font-semibold text-[#94a3b8] mt-0.5 uppercase tracking-widest">Heliographic Research Center — FIUNA</p>
+              <p className="text-[10px] font-semibold text-[#94a3b8] mt-0.5 uppercase tracking-widest">Plataforma de Investigación Solar</p>
             </div>
           </div>
           <div className="sm:text-right">
@@ -1570,16 +1721,8 @@ function ReportTab({ metadata, detections, image, viewBox }: any) {
         </div>
 
         {/* Internal Footer (for PDF) */}
-        <div className="mt-12 pt-6 border-t border-[#f1f5f9] flex justify-between items-end gap-6">
-          <div className="space-y-1.5">
-            <p className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest">Secured Report Hash</p>
-            <div className="h-px w-28 bg-[#e2e8f0]" />
-            <p className="text-[10px] font-semibold text-[#94a3b8]">Generated via Sunspot Intelligence Kernel v4.6</p>
-          </div>
-          <div className="text-right">
-             <p className="text-[10px] font-black text-[#94a3b8] uppercase tracking-widest mb-2">Firma Autorizada</p>
-             <div className="h-px w-32 bg-[#0f172a] ml-auto" />
-          </div>
+        <div className="mt-12 pt-6 border-t border-[#f1f5f9] flex justify-center">
+            {/* Redundant institutional text removed */}
         </div>
       </div>
 
@@ -1591,7 +1734,7 @@ function ReportTab({ metadata, detections, image, viewBox }: any) {
       >
         {downloading ? (
           <>
-            <Loader2 className="h-5 w-5 animate-spin" />
+            <div className="h-5 w-5 border-2 border-slate-500 border-t-white rounded-sm animate-spin" />
             Generando PDF...
           </>
         ) : (
