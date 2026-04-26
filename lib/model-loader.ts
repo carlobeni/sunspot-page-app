@@ -72,7 +72,7 @@ export async function downloadModelsWithProgress(
       });
     }
 
-    const blob = new Blob(chunks);
+    const blob = new Blob(chunks as BlobPart[]);
     const cachedResponse = new Response(blob, {
       headers: response.headers
     });
