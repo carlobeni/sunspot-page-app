@@ -115,6 +115,7 @@ export default function ResetPasswordPage() {
                 <input type="text" name="username" value={userEmail} readOnly hidden autoComplete="username" />
               </div>
             )}
+            <div className="space-y-6">
               <div className="space-y-2">
                 <label htmlFor="password" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">Nueva Contraseña</label>
                 <input
