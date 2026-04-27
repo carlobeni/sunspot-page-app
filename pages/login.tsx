@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Loader2, ShieldCheck, Globe, Telescope } from "lucide-react";
+import { Loader2, ShieldCheck, Globe, Telescope, Eye, EyeOff } from "lucide-react";
 import { useState, useTransition } from "react";
 import Head from "next/head";
 import { supabase } from "@/lib/supabase";
@@ -14,6 +14,7 @@ export default function LoginPage() {
   const [isPending, startTransition] = useTransition();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
   
   // Model loading states
   const [isPreparingModels, setIsPreparingModels] = useState(false);
@@ -109,16 +110,25 @@ export default function LoginPage() {
               </div>
               <div className="space-y-2">
                 <label htmlFor="password" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">Contraseña</label>
-                <input
-                  id="password"
-                  name="password"
-                  type="password"
-                  autoComplete="current-password"
-                  required
-                  className="block w-full rounded-lg border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 outline-none text-sm transition-all font-medium"
-                  placeholder="••••••••"
-                  disabled={isLoading || isPending}
-                />
+                <div className="relative">
+                  <input
+                    id="password"
+                    name="password"
+                    type={showPassword ? "text" : "password"}
+                    autoComplete="current-password"
+                    required
+                    className="block w-full rounded-lg border border-slate-200 bg-slate-50 py-3 pl-4 pr-12 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 outline-none text-sm transition-all font-medium"
+                    placeholder="••••••••"
+                    disabled={isLoading || isPending}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-900 transition-colors"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
               </div>
             </div>
 

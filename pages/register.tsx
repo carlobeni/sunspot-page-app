@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { View, Loader2, UserPlus, Globe, ShieldCheck } from "lucide-react";
+import { View, Loader2, UserPlus, Globe, ShieldCheck, Eye, EyeOff } from "lucide-react";
 import { useState, useTransition, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
 import { ACADEMIC_DEGREES } from "@/lib/constants";
@@ -92,6 +92,8 @@ export default function RegisterPage() {
   const [phoneCountry, setPhoneCountry] = useState("py");
   const [selectedCountry, setSelectedCountry] = useState("py");
   const [phoneNumber, setPhoneNumber] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const formatPhoneNumber = (value: string) => {
     const digits = value.replace(/\D/g, "").slice(0, 9);
@@ -385,27 +387,45 @@ export default function RegisterPage() {
 
                   <div className="space-y-2">
                     <label htmlFor="password" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">Contraseña</label>
-                    <input
-                      id="password"
-                      name="password"
-                      type="password"
-                      required
-                      className="block w-full rounded-lg border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 outline-none text-sm transition-all font-medium"
-                      placeholder="••••••••"
-                      disabled={isLoading || isPending}
-                    />
+                    <div className="relative">
+                      <input
+                        id="password"
+                        name="password"
+                        type={showPassword ? "text" : "password"}
+                        required
+                        className="block w-full rounded-lg border border-slate-200 bg-slate-50 py-3 pl-4 pr-12 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 outline-none text-sm transition-all font-medium"
+                        placeholder="••••••••"
+                        disabled={isLoading || isPending}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-900 transition-colors"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="confirm-password" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">Confirmar</label>
-                    <input
-                      id="confirm-password"
-                      name="confirm-password"
-                      type="password"
-                      required
-                      className="block w-full rounded-lg border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 outline-none text-sm transition-all font-medium"
-                      placeholder="••••••••"
-                      disabled={isLoading || isPending}
-                    />
+                    <div className="relative">
+                      <input
+                        id="confirm-password"
+                        name="confirm-password"
+                        type={showConfirmPassword ? "text" : "password"}
+                        required
+                        className="block w-full rounded-lg border border-slate-200 bg-slate-50 py-3 pl-4 pr-12 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 outline-none text-sm transition-all font-medium"
+                        placeholder="••••••••"
+                        disabled={isLoading || isPending}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1.5 text-slate-400 hover:text-slate-900 transition-colors"
+                      >
+                        {showConfirmPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
