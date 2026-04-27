@@ -23,7 +23,7 @@ export default function RecoverPage() {
     const email = formData.get("email") as string;
 
     const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/settings`,
+      redirectTo: `${window.location.origin}/reset-password`,
     });
 
     if (resetError) {

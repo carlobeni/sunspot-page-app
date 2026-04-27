@@ -3,10 +3,85 @@
 import Link from "next/link";
 import { useRouter } from "next/router";
 import { View, Loader2, UserPlus, Globe, ShieldCheck } from "lucide-react";
-import { useState, useTransition } from "react";
+import { useState, useTransition, useRef, useEffect } from "react";
 import { supabase } from "@/lib/supabase";
-import { ACADEMIC_DEGREES, COUNTRIES } from "@/lib/constants";
+import { ACADEMIC_DEGREES } from "@/lib/constants";
 import { BrandLogo } from "@/components/BrandLogo";
+import { COUNTRY_LIST } from "@/lib/country-data";
+
+function CustomCountrySelect({
+  options,
+  value,
+  onChange,
+  renderOption,
+  renderValue,
+  disabled,
+  className
+}: {
+  options: typeof COUNTRY_LIST;
+  value: string;
+  onChange: (val: string) => void;
+  renderOption: (opt: typeof COUNTRY_LIST[0]) => React.ReactNode;
+  renderValue: (opt: typeof COUNTRY_LIST[0]) => React.ReactNode;
+  disabled?: boolean;
+  className?: string;
+}) {
+  const [isOpen, setIsOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (containerRef.current && !containerRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
+  const selectedOption = options.find((o) => o.code === value) || options[0];
+
+  return (
+    <div className={`relative ${className}`} ref={containerRef}>
+      <div
+        className={`flex w-full items-center justify-between rounded-lg border border-slate-200 bg-slate-50 py-3 px-3 text-slate-900 focus:border-slate-800 outline-none text-sm font-medium transition-all ${
+          disabled ? "opacity-50 cursor-not-allowed" : "cursor-pointer hover:bg-slate-100"
+        }`}
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+      >
+        <div className="flex items-center gap-1 pointer-events-none mr-1 min-w-0">
+          {renderValue(selectedOption)}
+        </div>
+        <svg
+          className={`w-4 h-4 shrink-0 text-slate-400 transition-transform ${isOpen ? "rotate-180" : ""}`}
+          fill="none"
+          stroke="currentColor"
+          viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7"></path>
+        </svg>
+      </div>
+      {isOpen && (
+        <div className="absolute z-50 mt-1 w-full min-w-max max-h-60 overflow-auto rounded-md bg-white py-1 text-base shadow-lg ring-1 ring-black ring-opacity-5 sm:text-sm">
+          {options.map((opt) => (
+            <div
+              key={opt.code}
+              className={`relative cursor-pointer select-none py-2 px-3 hover:bg-slate-100 ${
+                value === opt.code ? "bg-slate-50 font-bold text-slate-900" : "text-slate-700"
+              }`}
+              onClick={() => {
+                onChange(opt.code);
+                setIsOpen(false);
+              }}
+            >
+              <div className="flex items-center gap-2 whitespace-nowrap">{renderOption(opt)}</div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -14,6 +89,22 @@ export default function RegisterPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [phoneCountry, setPhoneCountry] = useState("py");
+  const [selectedCountry, setSelectedCountry] = useState("py");
+  const [phoneNumber, setPhoneNumber] = useState("");
+
+  const formatPhoneNumber = (value: string) => {
+    const digits = value.replace(/\D/g, "").slice(0, 9);
+    const parts = [];
+    for (let i = 0; i < digits.length; i += 3) {
+      parts.push(digits.slice(i, i + 3));
+    }
+    return parts.join("-");
+  };
+
+  const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setPhoneNumber(formatPhoneNumber(e.target.value));
+  };
 
   const handleRegister = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -29,7 +120,32 @@ export default function RegisterPage() {
     const degree = formData.get("degree") as string;
     const university = formData.get("university") as string;
     const country = formData.get("country") as string;
-    const phone = formData.get("phone") as string;
+    const phoneCountryCode = formData.get("phoneCountryCode") as string;
+    const phoneNum = formData.get("phone") as string;
+    const phone = `${phoneCountryCode} ${phoneNum}`;
+
+    // Validation: Email format
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+    if (!emailRegex.test(email)) {
+      setError("Por favor, ingrese un correo electrónico válido.");
+      setIsLoading(false);
+      return;
+    }
+
+    // Validation: Age cannot be negative
+    if (parseInt(age) < 0) {
+      setError("La edad no puede ser un valor negativo.");
+      setIsLoading(false);
+      return;
+    }
+
+    // Validation: Phone format
+    const phoneRegex = /^[0-9\s\-]{6,15}$/;
+    if (!phoneRegex.test(phoneNum)) {
+      setError("Por favor, ingrese un número de teléfono válido (mínimo 6 dígitos).");
+      setIsLoading(false);
+      return;
+    }
 
     // Validation: Passwords must match
     if (password !== confirmPassword) {
@@ -139,6 +255,7 @@ export default function RegisterPage() {
                       name="age"
                       type="number"
                       required
+                      min="0"
                       className="block w-full rounded-lg border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 outline-none text-sm transition-all font-medium"
                       placeholder="25"
                       disabled={isLoading || isPending}
@@ -146,15 +263,39 @@ export default function RegisterPage() {
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="phone" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">Teléfono</label>
-                    <input
-                      id="phone"
-                      name="phone"
-                      type="tel"
-                      required
-                      className="block w-full rounded-lg border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 outline-none text-sm transition-all font-medium"
-                      placeholder="+595 9xx..."
-                      disabled={isLoading || isPending}
-                    />
+                    <div className="flex gap-2 relative">
+                      <input type="hidden" name="phoneCountryCode" value={COUNTRY_LIST.find(c => c.code === phoneCountry)?.dialCode || "+595"} />
+                      <CustomCountrySelect
+                        className="w-[110px]"
+                        options={COUNTRY_LIST}
+                        value={phoneCountry}
+                        onChange={setPhoneCountry}
+                        disabled={isLoading || isPending}
+                        renderOption={(opt) => (
+                          <>
+                            <img src={`https://flagcdn.com/w20/${opt.code}.png`} alt={opt.name} className="w-5 h-auto rounded-[2px]" />
+                            <span className="font-medium text-xs">{opt.code.toUpperCase()} ({opt.dialCode})</span>
+                          </>
+                        )}
+                        renderValue={(opt) => (
+                          <>
+                            <img src={`https://flagcdn.com/w20/${opt.code}.png`} alt={opt.name} className="w-5 h-auto rounded-[2px]" />
+                            <span className="font-medium text-xs">{opt.dialCode}</span>
+                          </>
+                        )}
+                      />
+                      <input
+                        id="phone"
+                        name="phone"
+                        type="tel"
+                        required
+                        value={phoneNumber}
+                        onChange={handlePhoneChange}
+                        className="flex-1 block w-full rounded-lg border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 outline-none text-sm transition-all font-medium"
+                        placeholder="9XX-XXX-XXX"
+                        disabled={isLoading || isPending}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -174,7 +315,7 @@ export default function RegisterPage() {
                       type="text"
                       required
                       className="block w-full rounded-lg border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 outline-none text-sm transition-all font-medium"
-                      placeholder="Universidad Nacional de Asunción"
+                      placeholder="Ej: Universidad Nacional de Asunción"
                       disabled={isLoading || isPending}
                     />
                   </div>
@@ -196,18 +337,26 @@ export default function RegisterPage() {
                   </div>
                   <div className="space-y-2">
                     <label htmlFor="country" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">País</label>
-                    <select
-                      id="country"
-                      name="country"
-                      required
-                      className="block w-full rounded-lg border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 focus:border-slate-800 outline-none text-sm transition-all font-medium cursor-pointer appearance-none"
+                    <input type="hidden" name="country" value={COUNTRY_LIST.find(c => c.code === selectedCountry)?.name || "Paraguay"} />
+                    <CustomCountrySelect
+                      className="w-full"
+                      options={COUNTRY_LIST}
+                      value={selectedCountry}
+                      onChange={setSelectedCountry}
                       disabled={isLoading || isPending}
-                    >
-                      <option value="" disabled selected>Seleccionar...</option>
-                      {COUNTRIES.map((c) => (
-                        <option key={c} value={c}>{c}</option>
-                      ))}
-                    </select>
+                      renderOption={(opt) => (
+                        <>
+                          <img src={`https://flagcdn.com/w20/${opt.code}.png`} alt={opt.name} className="w-5 h-auto rounded-[2px]" />
+                          <span className="font-medium text-sm">{opt.name}</span>
+                        </>
+                      )}
+                      renderValue={(opt) => (
+                        <>
+                          <img src={`https://flagcdn.com/w20/${opt.code}.png`} alt={opt.name} className="w-5 h-auto rounded-[2px]" />
+                          <span className="font-medium text-sm">{opt.name}</span>
+                        </>
+                      )}
+                    />
                   </div>
                 </div>
               </div>
@@ -226,6 +375,8 @@ export default function RegisterPage() {
                       name="email"
                       type="email"
                       required
+                      pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}"
+                      title="Por favor, ingrese un correo electrónico válido"
                       className="block w-full rounded-lg border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 outline-none text-sm transition-all font-medium"
                       placeholder="usuario@fiuna.edu.py"
                       disabled={isLoading || isPending}
