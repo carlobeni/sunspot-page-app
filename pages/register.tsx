@@ -209,7 +209,7 @@ export default function RegisterPage() {
           <div className="text-center space-y-6 py-8">
             <div className="bg-emerald-50 p-8 border border-emerald-100 rounded-2xl">
               <p className="text-xs font-bold text-emerald-800 uppercase tracking-widest leading-relaxed">
-                ¡Registro completado! Verifica tu correo electrónico para confirmar tu cuenta.
+                ¡Registro completado! Tu cuenta ha sido creada con éxito. Ya puedes iniciar sesión.
               </p>
             </div>
             <Link 
