@@ -13,15 +13,13 @@ export default function ResetPasswordPage() {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
-  // Supabase takes care of the session when clicking the email link
-  // But we can check if we actually have a session to be safe
+  const [userEmail, setUserEmail] = useState<string | null>(null);
+
   useEffect(() => {
     const checkSession = async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      // In a real recovery flow, the session is established via the URL fragment
-      // If we don't have a session, we might want to redirect if they just try to visit this page directly
-      if (!session && !window.location.hash.includes('access_token')) {
-        // setError("No se detectó una sesión de recuperación válida. Por favor, solicite un nuevo enlace.");
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) {
+        setUserEmail(user.email ?? null);
       }
     };
     checkSession();
@@ -108,8 +106,15 @@ export default function ResetPasswordPage() {
                 {error}
               </div>
             )}
-            
-            <div className="space-y-6">
+
+            {userEmail && (
+              <div className="bg-slate-50 border border-slate-100 rounded-lg p-4 flex flex-col gap-1">
+                <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest">Restableciendo para:</span>
+                <span className="text-sm font-bold text-slate-700">{userEmail}</span>
+                {/* Hidden username field for password managers to avoid mixing with other accounts */}
+                <input type="text" name="username" value={userEmail} readOnly hidden autoComplete="username" />
+              </div>
+            )}
               <div className="space-y-2">
                 <label htmlFor="password" className="block text-[10px] font-bold text-slate-400 uppercase tracking-widest pl-1">Nueva Contraseña</label>
                 <input
@@ -117,6 +122,7 @@ export default function ResetPasswordPage() {
                   name="password"
                   type="password"
                   required
+                  autoComplete="new-password"
                   className="block w-full rounded-lg border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 outline-none text-sm transition-all font-medium"
                   placeholder="••••••••"
                   disabled={isLoading}
@@ -130,6 +136,7 @@ export default function ResetPasswordPage() {
                   name="confirm-password"
                   type="password"
                   required
+                  autoComplete="new-password"
                   className="block w-full rounded-lg border border-slate-200 bg-slate-50 py-3 px-4 text-slate-900 placeholder:text-slate-300 focus:border-slate-800 outline-none text-sm transition-all font-medium"
                   placeholder="••••••••"
                   disabled={isLoading}
