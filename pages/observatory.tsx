@@ -1,6 +1,6 @@
 import { useRouter } from "next/router";
 import Head from "next/head";
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useMemo, useCallback } from "react";
 import {
   Telescope,
   Image as ImageIcon,
@@ -30,6 +30,7 @@ import {
   Minimize2,
 } from "lucide-react";
 import { useAuth } from "../lib/AuthContext";
+import { supabase } from "../lib/supabase";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { runYoloInference } from "../lib/yolo-inference";
@@ -546,19 +547,196 @@ export default function ObservatoryPage() {
   }
 
 /* ─────────────────────────────────────────────── */
+/*  GALLERY PREVIEW COMPONENT                      */
+/* ─────────────────────────────────────────────── */
+function GalleryImagePreview({ img, publicUrl, onSelect }: any) {
+  const [loaded, setLoaded] = useState(false);
+  const meta = img.metadata_json?.camera_settings;
+  const exposureMs = meta?.exposure_us ? (meta.exposure_us / 1000).toFixed(1) : null;
+
+  return (
+    <button 
+      onClick={() => onSelect(publicUrl)}
+      className="group relative aspect-square rounded-xl overflow-hidden border border-slate-200 bg-black hover:ring-2 hover:ring-emerald-500 hover:ring-offset-2 transition-all shadow-sm"
+    >
+      {!loaded && (
+         <div className="absolute inset-0 z-20 flex flex-col items-center justify-center bg-slate-50">
+           <div className="w-8 h-8 border-4 border-slate-200 border-t-slate-800 rounded-xl shadow-sm animate-spin mb-2" />
+           <div className="bg-white px-3 py-1.5 border border-slate-200 rounded-lg shadow-sm">
+              <p className="text-[10px] text-slate-800 font-bold animate-pulse uppercase tracking-widest">
+                Renderizando...
+              </p>
+           </div>
+         </div>
+      )}
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img 
+        src={publicUrl} 
+        alt={img.file_name} 
+        onLoad={() => setLoaded(true)}
+        className={cn("w-full h-full object-cover transition-all duration-300", !loaded ? "opacity-0" : "opacity-80 group-hover:opacity-100 group-hover:scale-105")} 
+      />
+      {loaded && (
+        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3 z-30">
+          <div className="w-full flex justify-end gap-1">
+             {meta && (
+                <>
+                  {exposureMs && (
+                    <span className="bg-slate-900/60 backdrop-blur-md text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider border border-white/10 shadow-sm">
+                       EXP {exposureMs}ms
+                    </span>
+                  )}
+                  {meta.gain !== undefined && (
+                    <span className="bg-slate-900/60 backdrop-blur-md text-white text-[9px] font-bold px-1.5 py-0.5 rounded uppercase tracking-wider border border-white/10 shadow-sm">
+                       GAIN {meta.gain}
+                    </span>
+                  )}
+                </>
+             )}
+          </div>
+          <div className="w-full text-left mt-auto">
+            <p className="text-[10px] font-bold text-white flex items-center gap-1.5"><Clock className="w-3 h-3" /> {new Date(img.obs_datetime).toLocaleDateString()} {new Date(img.obs_datetime).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</p>
+          </div>
+        </div>
+      )}
+    </button>
+  );
+}
+
 /* ─────────────────────────────────────────────── */
 /*  IMAGE TAB                                      */
 /* ─────────────────────────────────────────────── */
 function ImageTab({ metadata, setMetadata, image, setImage, zoom, setZoom, offset, setOffset, onNext }: any) {
-  const [mode, setMode] = useState<"upload" | "capture" | null>(null);
-  const [gain, setGain] = useState(50);
-  const [exposure, setExposure] = useState(20);
+  const [mode, setMode] = useState<"upload" | "gallery" | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
 
   const [validatingImage, setValidatingImage] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
 
+  const [galleryImages, setGalleryImages] = useState<any[]>([]);
+  const [loadingGallery, setLoadingGallery] = useState(false);
+  const [page, setPage] = useState(0);
+  const [hasMore, setHasMore] = useState(true);
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  const observer = useRef<IntersectionObserver | null>(null);
+  const lastImageRef = useCallback((node: any) => {
+    if (loadingGallery) return;
+    if (observer.current) observer.current.disconnect();
+    observer.current = new IntersectionObserver(entries => {
+      if (entries[0].isIntersecting && hasMore) {
+        setPage(prev => prev + 1);
+      }
+    });
+    if (node) observer.current.observe(node);
+  }, [loadingGallery, hasMore]);
+
+  useEffect(() => {
+    if (mode === 'gallery') {
+      const fetchImages = async () => {
+        setLoadingGallery(true);
+        try {
+          const limit = 20;
+          const from = page * limit;
+          const to = from + limit - 1;
+
+          const { data, error } = await supabase
+            .from('live_captures')
+            .select('*')
+            .order('obs_datetime', { ascending: false })
+            .range(from, to);
+          
+          if (data && data.length > 0) {
+            const paths = data.map(img => img.storage_path);
+            // Bulk create signed URLs for all paths in the 'snapshots' bucket
+            const { data: signedData } = await supabase
+              .storage
+              .from('snapshots')
+              .createSignedUrls(paths, 3600); // 1 hour expiration
+
+            const enrichedData = data.map((img, i) => ({
+              ...img,
+              publicUrl: signedData?.[i]?.signedUrl
+            })).filter(img => img.publicUrl); // Filter out any that failed to sign
+            
+            setGalleryImages(prev => {
+              const existingIds = new Set(prev.map(p => p.id));
+              const newItems = enrichedData.filter(d => !existingIds.has(d.id));
+              return [...prev, ...newItems];
+            });
+            if (data.length < limit) setHasMore(false);
+          } else {
+            setHasMore(false);
+          }
+        } catch (e) {
+          console.error(e);
+        } finally {
+          setLoadingGallery(false);
+        }
+      };
+      fetchImages();
+    }
+  }, [mode, page]);
+
+  const groupedGallery = useMemo(() => {
+    const groups: { date: string, label: string, items: any[] }[] = [];
+    const map = new Map<string, number>();
+
+    galleryImages.forEach(img => {
+      const d = new Date(img.obs_datetime);
+      const yyyy = d.getFullYear();
+      const mm = String(d.getMonth() + 1).padStart(2, '0');
+      const dd = String(d.getDate()).padStart(2, '0');
+      const dateKey = `${yyyy}-${mm}-${dd}`;
+      
+      let label = dateKey;
+      const today = new Date();
+      if (today.getFullYear() === yyyy && today.getMonth() === d.getMonth() && today.getDate() === d.getDate()) {
+        label = "Hoy";
+      } else {
+        const yesterday = new Date(today);
+        yesterday.setDate(yesterday.getDate() - 1);
+        if (yesterday.getFullYear() === yyyy && yesterday.getMonth() === d.getMonth() && yesterday.getDate() === d.getDate()) {
+          label = "Ayer";
+        } else {
+          label = d.toLocaleDateString('es-ES', { day: 'numeric', month: 'long', year: 'numeric' });
+        }
+      }
+
+      let groupIndex = map.get(dateKey);
+      if (groupIndex === undefined) {
+        groupIndex = groups.length;
+        map.set(dateKey, groupIndex);
+        groups.push({ date: dateKey, label, items: [] });
+      }
+      groups[groupIndex].items.push(img);
+    });
+    return groups;
+  }, [galleryImages]);
+
+  const handleSelectGalleryImage = async (url: string) => {
+    setMode("upload"); // switch to "upload" to show validating spinner
+    setValidatingImage(true);
+    setUploadError(null);
+    try {
+        const response = await fetch(url);
+        const blob = await response.blob();
+        const file = new File([blob], "gallery_image.jpg", { type: "image/jpeg" });
+        const result = await validateSolarDisk(file);
+        
+        if (result.isValid) {
+          const objectUrl = URL.createObjectURL(file);
+          processAndAlignImage(objectUrl);
+        } else {
+          setUploadError(result.errorMsg || "Error al validar la imagen de la galería.");
+          setValidatingImage(false);
+        }
+    } catch (e) {
+        setUploadError("Error al cargar la imagen de la galería.");
+        setValidatingImage(false);
+    }
+  };
   
   // Alignment local state for dragging
   const [isDragging, setIsDragging] = useState(false);
@@ -644,6 +822,65 @@ function ImageTab({ metadata, setMetadata, image, setImage, zoom, setZoom, offse
     });
   };
 
+  const processAndAlignImage = (objectUrl: string) => {
+    setValidatingImage(true); 
+    const img = new window.Image();
+    img.src = objectUrl;
+    img.onload = () => {
+      const canvas = document.createElement("canvas");
+      const ctx = canvas.getContext("2d");
+      if (!ctx) {
+         setImage(objectUrl);
+         setValidatingImage(false);
+         return;
+      }
+
+      const scale = 256 / Math.max(img.width, img.height);
+      canvas.width = img.width * scale;
+      canvas.height = img.height * scale;
+      ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+      const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
+      
+      let minX = canvas.width, maxX = 0, minY = canvas.height, maxY = 0;
+      let found = false;
+      for (let y = 0; y < canvas.height; y++) {
+        for (let x = 0; x < canvas.width; x++) {
+          const i = (y * canvas.width + x) * 4;
+          if ((data[i] + data[i+1] + data[i+2]) / 3 > 40) {
+            if (x < minX) minX = x; if (x > maxX) maxX = x;
+            if (y < minY) minY = y; if (y > maxY) maxY = y;
+            found = true;
+          }
+        }
+      }
+
+      if (found) {
+        const diskR = ((maxX - minX + maxY - minY) / 4) / scale;
+        const diskCX = ((minX + maxX) / 2) / scale;
+        const diskCY = ((minY + maxY) / 2) / scale;
+        
+        const containerSize = 480;
+        const targetR = (containerSize / 2) * 0.92;
+        
+        // zoom factor to match radius
+        const newZoom = targetR / diskR;
+        
+        // Calculate offset to center the disk
+        const imgCenterX = img.width / 2;
+        const imgCenterY = img.height / 2;
+        
+        const offX = (imgCenterX - diskCX) * newZoom;
+        const offY = (imgCenterY - diskCY) * newZoom;
+        
+        setZoom(newZoom);
+        setOffset({ x: offX, y: offY });
+      }
+
+      setImage(objectUrl);
+      setValidatingImage(false);
+    };
+  };
+
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -658,69 +895,8 @@ function ImageTab({ metadata, setMetadata, image, setImage, zoom, setZoom, offse
     setValidatingImage(false);
 
     if (result.isValid) {
-      setValidatingImage(true); 
       const objectUrl = URL.createObjectURL(file);
-      
-      // Auto-alignment detection
-      const img = new Image();
-      img.src = objectUrl;
-      img.onload = () => {
-        const canvas = document.createElement("canvas");
-        const ctx = canvas.getContext("2d");
-        if (!ctx) {
-           setImage(objectUrl);
-           setValidatingImage(false);
-           return;
-        }
-
-        const scale = 256 / Math.max(img.width, img.height);
-        canvas.width = img.width * scale;
-        canvas.height = img.height * scale;
-        ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-        const data = ctx.getImageData(0, 0, canvas.width, canvas.height).data;
-        
-        let minX = canvas.width, maxX = 0, minY = canvas.height, maxY = 0;
-        let found = false;
-        for (let y = 0; y < canvas.height; y++) {
-          for (let x = 0; x < canvas.width; x++) {
-            const i = (y * canvas.width + x) * 4;
-            if ((data[i] + data[i+1] + data[i+2]) / 3 > 40) {
-              if (x < minX) minX = x; if (x > maxX) maxX = x;
-              if (y < minY) minY = y; if (y > maxY) maxY = y;
-              found = true;
-            }
-          }
-        }
-
-        if (found) {
-          const diskR = ((maxX - minX + maxY - minY) / 4) / scale;
-          const diskCX = ((minX + maxX) / 2) / scale;
-          const diskCY = ((minY + maxY) / 2) / scale;
-          
-          const containerSize = 480;
-          const targetR = (containerSize / 2) * 0.92;
-          
-          // zoom factor to match radius
-          const newZoom = targetR / diskR;
-          
-          // Calculate offset to center the disk
-          // Image center in container coordinates is 240, 240
-          // Disk center in image coordinates is diskCX, diskCY
-          const imgCenterX = img.width / 2;
-          const imgCenterY = img.height / 2;
-          
-          // Standard 'object-cover' at zoom 1.0 would put imgCenter at 240,240
-          // So we need an offset that shifts the disk from its image position to the center
-          const offX = (imgCenterX - diskCX) * newZoom;
-          const offY = (imgCenterY - diskCY) * newZoom;
-          
-          setZoom(newZoom);
-          setOffset({ x: offX, y: offY });
-        }
-
-        setImage(objectUrl);
-        setValidatingImage(false);
-      };
+      processAndAlignImage(objectUrl);
     } else {
       setUploadError(result.errorMsg || "Error al validar la imagen.");
       setValidatingImage(false);
@@ -760,18 +936,18 @@ function ImageTab({ metadata, setMetadata, image, setImage, zoom, setZoom, offse
               </button>
 
               <button
-                onClick={() => setMode("capture")}
+                onClick={() => setMode("gallery")}
                 className={cn(
                   "flex flex-col sm:flex-row lg:flex-row items-center sm:items-start gap-2 sm:gap-3 p-3 sm:p-3.5 rounded-lg border transition-all text-left group",
-                  mode === "capture" ? "border-slate-800 bg-slate-50 shadow-sm" : "border-slate-200 hover:border-slate-300 bg-white"
+                  mode === "gallery" ? "border-slate-800 bg-slate-50 shadow-sm" : "border-slate-200 hover:border-slate-300 bg-white"
                 )}
               >
-                <div className={cn("p-2 rounded-md border shrink-0", mode === "capture" ? "bg-slate-100 text-slate-900 border-slate-200" : "bg-slate-50 text-slate-400 border-slate-200 group-hover:text-slate-700")}>
-                  <Telescope className="h-4 w-4" />
+                <div className={cn("p-2 rounded-md border shrink-0", mode === "gallery" ? "bg-slate-100 text-slate-900 border-slate-200" : "bg-slate-50 text-slate-400 border-slate-200 group-hover:text-slate-700")}>
+                  <ImageIcon className="h-4 w-4" />
                 </div>
                 <div className="min-w-0 text-center sm:text-left">
-                  <span className="block font-bold text-slate-900 text-xs sm:text-sm leading-tight">Cámara Solar</span>
-                  <span className="text-[10px] sm:text-xs font-medium text-slate-400 leading-tight">Captura en Vivo</span>
+                  <span className="block font-bold text-slate-900 text-xs sm:text-sm leading-tight">Galería Solar</span>
+                  <span className="text-[10px] sm:text-xs font-medium text-slate-400 leading-tight">Observatorio Solar</span>
                 </div>
               </button>
             </div>
@@ -1083,145 +1259,57 @@ function ImageTab({ metadata, setMetadata, image, setImage, zoom, setZoom, offse
                 </div>
               </div>
             </div>
-          ) : (
-            <>
-              {/* ── Fullscreen overlay ── */}
-              {fullscreen && (
-                <div
-                  className="fixed inset-0 z-50 bg-black flex flex-col"
-                  onKeyDown={(e) => e.key === "Escape" && setFullscreen(false)}
-                  tabIndex={-1}
-                >
-                  {/* Fullscreen top bar */}
-                  <div className="flex items-center justify-between px-5 py-3 bg-black/80 border-b border-white/10">
-                    <div className="flex items-center gap-2">
-                      <div className="h-2 w-2 rounded-full bg-red-500 animate-pulse" />
-                      <span className="text-[10px] font-black uppercase tracking-widest text-white/70">Live Signal: PI5-SYNC</span>
-                    </div>
-                    <button
-                      onClick={() => setFullscreen(false)}
-                      className="p-2 rounded-md bg-white/10 hover:bg-white/20 text-white transition-all"
-                    >
-                      <X className="h-5 w-5" />
-                    </button>
-                  </div>
-
-                  {/* Fullscreen live area */}
-                  <div className="flex-1 flex items-center justify-center relative">
-                    <div className="absolute inset-0 flex items-center justify-center opacity-10">
-                      <div className="w-[60%] h-[60%] border-2 border-white rounded-lg border-dashed" />
-                      <div className="absolute w-[80%] h-[80%] border-2 border-white rounded-full border-dashed" />
-                    </div>
-                    <div className="h-12 w-12 border-4 border-slate-600 border-t-slate-200 rounded-xl animate-spin" />
-                  </div>
-
-                  {/* Fullscreen controls bar */}
-                  <div className="px-6 py-5 bg-black/80 border-t border-white/10 flex flex-col sm:flex-row gap-5 sm:items-end">
-                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-5">
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <label className="text-[10px] font-black text-white/50 uppercase tracking-widest">Master Gain</label>
-                          <span className="text-[10px] font-black text-white/70 tabular-nums">{gain}</span>
-                        </div>
-                        <input
-                          type="range" min={0} max={100} value={gain}
-                          onChange={(e) => setGain(Number(e.target.value))}
-                          className="w-full h-1.5 appearance-none rounded-full accent-slate-300 cursor-pointer"
-                        />
+          ) : mode === "gallery" ? (
+            <div className="p-4 sm:p-6 w-full h-full flex flex-col">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-sm font-bold text-slate-800 flex items-center gap-2">
+                  <ImageIcon className="w-4 h-4 text-emerald-600" />
+                  Galería Solar
+                </h3>
+              </div>
+              {galleryImages.length === 0 && loadingGallery ? (
+                <div className="flex-1 flex flex-col items-center justify-center gap-3">
+                  <Loader2 className="w-8 h-8 text-emerald-500 animate-spin" />
+                  <span className="text-xs font-bold text-slate-500 uppercase tracking-widest">Cargando Galería...</span>
+                </div>
+              ) : (
+                <div className="flex-1 overflow-y-auto pb-6 custom-scrollbar pr-2 relative">
+                  {groupedGallery.map((group, groupIdx) => (
+                    <div key={group.date} className="mb-6">
+                      <div className="sticky top-0 z-40 bg-white/90 backdrop-blur-md py-2 mb-3 border-b border-slate-100 flex items-center justify-between">
+                         <h4 className="text-sm font-bold text-slate-800 capitalize">{group.label}</h4>
+                         <span className="text-[10px] font-black uppercase text-slate-400 bg-slate-100 px-2 py-0.5 rounded-full">{group.items.length} cap.</span>
                       </div>
-                      <div className="space-y-2">
-                        <div className="flex justify-between">
-                          <label className="text-[10px] font-black text-white/50 uppercase tracking-widest">Exposición (ms)</label>
-                          <span className="text-[10px] font-black text-white/70 tabular-nums">{exposure}</span>
-                        </div>
-                        <input
-                          type="range" min={1} max={500} value={exposure}
-                          onChange={(e) => setExposure(Number(e.target.value))}
-                          className="w-full h-1.5 appearance-none rounded-full accent-slate-300 cursor-pointer"
-                        />
+                      <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+                        {group.items.map((img: any, i: number) => {
+                          const isLast = groupIdx === groupedGallery.length - 1 && i === group.items.length - 1;
+                          return (
+                            <div key={img.id} ref={isLast ? lastImageRef : null}>
+                              <GalleryImagePreview 
+                                img={img}
+                                publicUrl={img.publicUrl}
+                                onSelect={handleSelectGalleryImage}
+                              />
+                            </div>
+                          )
+                        })}
                       </div>
                     </div>
-                    <button
-                      onClick={() => {}}
-                      className="bg-white hover:bg-slate-100 text-slate-900 px-6 py-2.5 rounded-md text-sm font-black transition-all flex items-center justify-center gap-2 shrink-0"
-                    >
-                      <Camera className="h-4 w-4" />
-                      Capturar
-                    </button>
-                  </div>
+                  ))}
+                  {galleryImages.length > 0 && loadingGallery && (
+                    <div className="w-full flex justify-center py-6">
+                      <Loader2 className="w-6 h-6 text-emerald-500 animate-spin" />
+                    </div>
+                  )}
+                  {!hasMore && galleryImages.length > 0 && (
+                    <div className="w-full text-center py-6">
+                      <span className="text-xs font-bold text-slate-400 uppercase tracking-widest">No hay más registros</span>
+                    </div>
+                  )}
                 </div>
               )}
-
-              {/* ── Inline capture view ── */}
-              <div className="w-full h-full flex flex-col min-h-[300px]">
-                <div className="flex-1 flex items-center justify-center relative bg-black">
-                  <div className="absolute inset-0 flex items-center justify-center opacity-10">
-                    <div className="w-[70%] h-[70%] border-2 border-white rounded-lg border-dashed" />
-                    <div className="absolute w-[90%] h-[90%] border-2 border-white rounded-full border-dashed" />
-                  </div>
-                  <div className="h-9 w-9 border-4 border-slate-700 border-t-slate-300 rounded-xl animate-spin" />
-
-                  {/* Badges */}
-                  <div className="absolute top-4 left-4 px-3 py-1.5 rounded-lg bg-white text-black text-[9px] font-black uppercase tracking-widest flex items-center gap-2">
-                    <div className="h-2 w-2 rounded-full bg-red-600 animate-pulse" />
-                    Live Signal: PI5-SYNC
-                  </div>
-
-                  {/* Fullscreen button */}
-                  <button
-                    onClick={() => setFullscreen(true)}
-                    title="Pantalla completa"
-                    className="absolute top-4 right-4 p-2 rounded-md bg-white/10 hover:bg-white/25 text-white border border-white/20 transition-all backdrop-blur-sm"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-                      <path d="M8 3H5a2 2 0 0 0-2 2v3"/><path d="M21 8V5a2 2 0 0 0-2-2h-3"/>
-                      <path d="M3 16v3a2 2 0 0 0 2 2h3"/><path d="M16 21h3a2 2 0 0 0 2-2v-3"/>
-                    </svg>
-                  </button>
-                </div>
-
-                {/* Controls bar */}
-                <div className="bg-white/95 backdrop-blur border-t border-slate-200 px-4 py-4">
-                  <div className="flex flex-col sm:flex-row sm:items-end gap-4">
-                    {/* Sliders */}
-                    <div className="flex-1 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between items-center">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Master Gain</label>
-                          <span className="text-[10px] font-black text-slate-700 tabular-nums bg-slate-100 px-1.5 py-0.5 rounded">{gain}</span>
-                        </div>
-                        <input
-                          type="range" min={0} max={100} value={gain}
-                          onChange={(e) => setGain(Number(e.target.value))}
-                          className="w-full h-1.5 appearance-none rounded-full accent-slate-800 cursor-pointer"
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <div className="flex justify-between items-center">
-                          <label className="text-[10px] font-black text-slate-500 uppercase tracking-widest">Exposición (ms)</label>
-                          <span className="text-[10px] font-black text-slate-700 tabular-nums bg-slate-100 px-1.5 py-0.5 rounded">{exposure}</span>
-                        </div>
-                        <input
-                          type="range" min={1} max={500} value={exposure}
-                          onChange={(e) => setExposure(Number(e.target.value))}
-                          className="w-full h-1.5 appearance-none rounded-full accent-slate-800 cursor-pointer"
-                        />
-                      </div>
-                    </div>
-
-                    {/* Capture button */}
-                    <button
-                      onClick={() => {}}
-                      className="bg-slate-800 hover:bg-slate-900 text-white px-5 py-2.5 rounded-md text-sm font-bold transition-all w-full sm:w-auto flex items-center justify-center gap-2 shrink-0"
-                    >
-                      <Camera className="h-4 w-4" />
-                      Capturar
-                    </button>
-                  </div>
-                </div>
-              </div>
-            </>
-          )}
+            </div>
+          ) : null}
         </div>
       </div>
     </div>

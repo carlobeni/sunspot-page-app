@@ -211,7 +211,7 @@ export default function RegisterPage() {
           <div className="text-center space-y-6 py-8">
             <div className="bg-emerald-50 p-8 border border-emerald-100 rounded-2xl">
               <p className="text-xs font-bold text-emerald-800 uppercase tracking-widest leading-relaxed">
-                ¡Registro completado! Tu cuenta ha sido creada con éxito. Ya puedes iniciar sesión.
+                ¡Registro completado! La cuenta fue creada exitosamente. Ya puedes iniciar sesión.
               </p>
             </div>
             <Link 
@@ -434,7 +434,7 @@ export default function RegisterPage() {
             <div className="bg-slate-50 p-6 border border-slate-100 rounded-xl">
                <p className="text-[10px] text-slate-500 leading-relaxed font-bold flex items-start gap-3">
                  <ShieldCheck className="h-4 w-4 text-slate-400 shrink-0" />
-                 SISTEMA DE SEGURIDAD: Todas las solicitudes de registro son monitoreadas y requieren validación mediante correo electrónico institucional para su activación definitiva.
+                 SISTEMA DE SEGURIDAD: Todas las solicitudes de registro son monitoreadas y la cuenta será creada exitosamente para su acceso inmediato.
                </p>
             </div>
 
