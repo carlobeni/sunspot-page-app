@@ -272,119 +272,122 @@ export default function TrendsPage() {
         </div>
         
         {!mounted || forecastLoading || !renderSsn ? <ChartSkeleton height={400} text="Generando Serie SSN..." /> : (
-          <div className="w-full h-[450px] relative">
-             <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart data={predictions} margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                <XAxis type="number" dataKey="yearFloat" scale="linear" domain={xDomain}
-                  fontSize={10} angle={-35} textAnchor="end" height={60}
-                  tick={{ fill: "#94a3b8", fontWeight: 700 }} tickFormatter={yf2m} />
-                <YAxis tick={{ fill: "#64748b", fontWeight: 700 }} fontSize={10} width={40} />
-                
-                <ReferenceArea x1={2019.9} x2={2030.0} fill="#f0fdf4" fillOpacity={0.4}>
-                  <Label value="CICLO 25" position="insideTopLeft" fill="#059669" fontSize={12} fontWeight={900} offset={20} />
-                </ReferenceArea>
+          <div className="w-full overflow-x-auto pb-4 mt-6">
+            <div className="min-w-[1000px] bg-white rounded-xl p-2 border border-slate-50 shadow-inner h-[500px]">
+               <ResponsiveContainer width="100%" height="100%">
+                <ComposedChart data={predictions} margin={{ top: 20, right: 30, bottom: 20, left: 20 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                  <XAxis type="number" dataKey="yearFloat" scale="linear" domain={xDomain}
+                    fontSize={10} angle={-35} textAnchor="end" height={60}
+                    tick={{ fill: "#94a3b8", fontWeight: 700 }} tickFormatter={yf2m} />
+                  <YAxis tick={{ fill: "#64748b", fontWeight: 700 }} fontSize={10} width={40} />
+                  
+                  <ReferenceArea x1={2019.9} x2={2030.0} fill="#f0fdf4" fillOpacity={0.4}>
+                    <Label value="CICLO 25" position="insideTopLeft" fill="#059669" fontSize={12} fontWeight={900} offset={20} />
+                  </ReferenceArea>
 
-                {lastHistoryYear && (
-                  <ReferenceLine x={lastHistoryYear} stroke="#94a3b8" strokeDasharray="3 3" label={{ value: yf2m(lastHistoryYear), position: 'insideTopLeft', fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} />
-                )}
+                  {lastHistoryYear && (
+                    <ReferenceLine x={lastHistoryYear} stroke="#94a3b8" strokeDasharray="3 3" label={{ value: yf2m(lastHistoryYear), position: 'insideTopLeft', fill: '#94a3b8', fontSize: 10, fontWeight: 900 }} />
+                  )}
 
-                <Tooltip 
-                  contentStyle={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", color: "#0f172a", borderRadius: "12px", boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)", padding: "12px" }} 
-                  itemStyle={{ fontWeight: "bold", fontSize: "12px" }}
-                  labelStyle={{ fontWeight: "800", color: "#1e293b", marginBottom: "4px" }}
-                  labelFormatter={yf2m} 
-                />
+                  <Tooltip 
+                    contentStyle={{ backgroundColor: "#ffffff", border: "1px solid #e2e8f0", color: "#0f172a", borderRadius: "12px", boxShadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)", padding: "12px" }} 
+                    itemStyle={{ fontWeight: "bold", fontSize: "12px" }}
+                    labelStyle={{ fontWeight: "800", color: "#1e293b", marginBottom: "4px" }}
+                    labelFormatter={yf2m} 
+                  />
 
-                <Legend 
-                  verticalAlign="top" align="center" height={60}
-                  content={(props) => {
-                    const { payload } = props;
-                    if (!payload) return null;
-                    return (
-                      <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 mb-8 border-b border-slate-50 pb-4">
-                        {/* History Group */}
-                        <div className="flex items-center gap-4">
-                          <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">Observación</span>
-                          <div className="flex items-center gap-2">
-                             <div className="w-2 h-2 rounded-full bg-slate-300" />
-                             <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Histórico</span>
+                  <Legend 
+                    verticalAlign="top" align="center" height={60}
+                    content={(props) => {
+                      const { payload } = props;
+                      if (!payload) return null;
+                      return (
+                        <div className="flex flex-wrap justify-center gap-x-8 gap-y-2 mb-8 border-b border-slate-50 pb-4">
+                          {/* History Group */}
+                          <div className="flex items-center gap-4">
+                            <span className="text-[9px] font-black text-slate-300 uppercase tracking-tighter">Observación</span>
+                            <div className="flex items-center gap-2">
+                               <div className="w-2 h-2 rounded-full bg-slate-300" />
+                               <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Histórico</span>
+                            </div>
                           </div>
+
+                          {showKalman && (
+                            <div className="flex items-center gap-4 border-l border-slate-100 pl-4">
+                              <span className="text-[9px] font-black text-emerald-200 uppercase tracking-tighter">P. + Kalman</span>
+                              <div className="flex items-center gap-3">
+                                 <div className="flex items-center gap-1.5">
+                                   <div className="w-2 h-0.5 bg-emerald-500" />
+                                   <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Ajuste</span>
+                                 </div>
+                                 <div className="flex items-center gap-1.5">
+                                   <div className="w-2 h-0.5 bg-emerald-500 border-t border-dashed" style={{ borderTopStyle: 'dashed' }} />
+                                   <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Predicción</span>
+                                 </div>
+                              </div>
+                            </div>
+                          )}
+
+                          {showDMD && (
+                            <div className="flex items-center gap-4 border-l border-slate-100 pl-4">
+                              <span className="text-[9px] font-black text-violet-200 uppercase tracking-tighter">Integral DMD Spörer</span>
+                              <div className="flex items-center gap-3">
+                                 <div className="flex items-center gap-1.5">
+                                   <div className="w-2 h-0.5 bg-violet-500" />
+                                   <span className="text-[10px] font-bold text-violet-600 uppercase tracking-widest">Ajuste</span>
+                                 </div>
+                                 <div className="flex items-center gap-1.5">
+                                   <div className="w-2 h-0.5 bg-violet-500 border-t border-dashed" style={{ borderTopStyle: 'dashed' }} />
+                                   <span className="text-[10px] font-bold text-violet-600 uppercase tracking-widest">Predicción</span>
+                                 </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
+                      );
+                    }}
+                  />
+                  
+                  <ReferenceArea x1={1996.4} x2={2008.9} fill="#f5f3ff" fillOpacity={0.9}>
+                    <Label value="CICLO 23" position="insideTop" offset={45} fill="#7c3aed" fontSize={10} fontWeight={900} style={{ letterSpacing: '0.1em' }} />
+                  </ReferenceArea>
+                  <ReferenceArea x1={2008.9} x2={2019.9} fill="#eff6ff" fillOpacity={0.9}>
+                    <Label value="CICLO 24" position="insideTop" offset={45} fill="#2563eb" fontSize={10} fontWeight={900} style={{ letterSpacing: '0.1em' }} />
+                  </ReferenceArea>
+                  <ReferenceArea x1={2019.9} x2={2030.0} fill="#f0fdf4" fillOpacity={0.9}>
+                    <Label value="CICLO 25" position="insideTop" offset={45} fill="#059669" fontSize={10} fontWeight={900} style={{ letterSpacing: '0.1em' }} />
+                  </ReferenceArea>
+                  <ReferenceArea x1={2030.0} x2={2041.0} fill="#fffbeb" fillOpacity={0.9}>
+                    <Label value="CICLO 26" position="insideTop" offset={45} fill="#d97706" fontSize={10} fontWeight={900} style={{ letterSpacing: '0.1em' }} />
+                  </ReferenceArea>
 
-                        {showKalman && (
-                          <div className="flex items-center gap-4 border-l border-slate-100 pl-4">
-                            <span className="text-[9px] font-black text-emerald-200 uppercase tracking-tighter">P. + Kalman</span>
-                            <div className="flex items-center gap-3">
-                               <div className="flex items-center gap-1.5">
-                                 <div className="w-2 h-0.5 bg-emerald-500" />
-                                 <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Ajuste</span>
-                               </div>
-                               <div className="flex items-center gap-1.5">
-                                 <div className="w-2 h-0.5 bg-emerald-500 border-t border-dashed" style={{ borderTopStyle: 'dashed' }} />
-                                 <span className="text-[10px] font-bold text-emerald-600 uppercase tracking-widest">Predicción</span>
-                               </div>
-                            </div>
-                          </div>
-                        )}
-
-                        {showDMD && (
-                          <div className="flex items-center gap-4 border-l border-slate-100 pl-4">
-                            <span className="text-[9px] font-black text-violet-200 uppercase tracking-tighter">Integral DMD Spörer</span>
-                            <div className="flex items-center gap-3">
-                               <div className="flex items-center gap-1.5">
-                                 <div className="w-2 h-0.5 bg-violet-500" />
-                                 <span className="text-[10px] font-bold text-violet-600 uppercase tracking-widest">Ajuste</span>
-                               </div>
-                               <div className="flex items-center gap-1.5">
-                                 <div className="w-2 h-0.5 bg-violet-500 border-t border-dashed" style={{ borderTopStyle: 'dashed' }} />
-                                 <span className="text-[10px] font-bold text-violet-600 uppercase tracking-widest">Predicción</span>
-                               </div>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    );
-                  }}
-                />
-                
-                <ReferenceArea x1={1996.4} x2={2008.9} fill="#f5f3ff" fillOpacity={0.9}>
-                  <Label value="CICLO 23" position="insideTop" offset={45} fill="#7c3aed" fontSize={10} fontWeight={900} style={{ letterSpacing: '0.1em' }} />
-                </ReferenceArea>
-                <ReferenceArea x1={2008.9} x2={2019.9} fill="#eff6ff" fillOpacity={0.9}>
-                  <Label value="CICLO 24" position="insideTop" offset={45} fill="#2563eb" fontSize={10} fontWeight={900} style={{ letterSpacing: '0.1em' }} />
-                </ReferenceArea>
-                <ReferenceArea x1={2019.9} x2={2030.0} fill="#f0fdf4" fillOpacity={0.9}>
-                  <Label value="CICLO 25" position="insideTop" offset={45} fill="#059669" fontSize={10} fontWeight={900} style={{ letterSpacing: '0.1em' }} />
-                </ReferenceArea>
-                <ReferenceArea x1={2030.0} x2={2041.0} fill="#fffbeb" fillOpacity={0.9}>
-                  <Label value="CICLO 26" position="insideTop" offset={45} fill="#d97706" fontSize={10} fontWeight={900} style={{ letterSpacing: '0.1em' }} />
-                </ReferenceArea>
-
-                <Line isAnimationActive={false} type="monotone" dataKey="historySsn" name="Histórico (Obs)" stroke="#cbd5e1" strokeWidth={3} dot={false} strokeOpacity={0.6} />
-                
-                {showKalman && (
-                  <>
-                    <Line isAnimationActive={false} type="monotone" dataKey="hathawaySSN_history" name="Ajuste (Kalman)" stroke="#10b981" strokeWidth={2} dot={false} />
-                    <Line isAnimationActive={false} type="monotone" dataKey="hathawaySSN_forecast" name="Predicción (Kalman)" stroke="#10b981" strokeWidth={2} dot={false} strokeDasharray="8 6" />
-                  </>
-                )}
-                
-                {showDMD && (
-                  <>
-                    <Line isAnimationActive={false} type="monotone" dataKey="dmdSSN_history" name="Ajuste (Integral DMD Spörer)" stroke="#8b5cf6" strokeWidth={2} dot={false} strokeOpacity={0.8} />
-                    <Line isAnimationActive={false} type="monotone" dataKey="dmdSSN_forecast" name="Predicción (Integral DMD Spörer)" stroke="#8b5cf6" strokeWidth={2} dot={false} strokeDasharray="4 4" />
-                  </>
-                )}
-                
-                {predictions[monthIdx]?.yearFloat != null && (
-                  <ReferenceLine x={predictions[monthIdx].yearFloat} stroke="#10b981" strokeWidth={1} strokeDasharray="4 4"
-                    label={{ value: predictions[monthIdx].month, position: "top", fill: "#10b981", fontSize: 9, fontWeight: "900" }} />
-                )}
-              </ComposedChart>
-            </ResponsiveContainer>
+                  <Line isAnimationActive={false} type="monotone" dataKey="historySsn" name="Histórico (Obs)" stroke="#cbd5e1" strokeWidth={3} dot={false} strokeOpacity={0.6} />
+                  
+                  {showKalman && (
+                    <>
+                      <Line isAnimationActive={false} type="monotone" dataKey="hathawaySSN_history" name="Ajuste (Kalman)" stroke="#10b981" strokeWidth={2} dot={false} />
+                      <Line isAnimationActive={false} type="monotone" dataKey="hathawaySSN_forecast" name="Predicción (Kalman)" stroke="#10b981" strokeWidth={2} dot={false} strokeDasharray="8 6" />
+                    </>
+                  )}
+                  
+                  {showDMD && (
+                    <>
+                      <Line isAnimationActive={false} type="monotone" dataKey="dmdSSN_history" name="Ajuste (Integral DMD Spörer)" stroke="#8b5cf6" strokeWidth={2} dot={false} strokeOpacity={0.8} />
+                      <Line isAnimationActive={false} type="monotone" dataKey="dmdSSN_forecast" name="Predicción (Integral DMD Spörer)" stroke="#8b5cf6" strokeWidth={2} dot={false} strokeDasharray="4 4" />
+                    </>
+                  )}
+                  
+                  {predictions[monthIdx]?.yearFloat != null && (
+                    <ReferenceLine x={predictions[monthIdx].yearFloat} stroke="#10b981" strokeWidth={1} strokeDasharray="4 4"
+                      label={{ value: predictions[monthIdx].month, position: "top", fill: "#10b981", fontSize: 9, fontWeight: "900" }} />
+                  )}
+                </ComposedChart>
+              </ResponsiveContainer>
+            </div>
           </div>
         )}
+
       </div>
 
       {/* Scientific References Section */}
