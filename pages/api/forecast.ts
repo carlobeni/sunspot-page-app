@@ -6,8 +6,8 @@ import { Matrix, SingularValueDecomposition } from "ml-matrix";
 const cache = new Map<number, { data: any; ts: number }>();
 const CACHE_TTL = 1000 * 60 * 60; // 1 hour
 
-// Hathaway (2015) Eq. 8: mean sunspot latitude (exponential drift)
-function hathawayLat(tYears: number): number {
+// Podladchikova & Van der Linden (2012): mean sunspot latitude (exponential drift)
+function pvlLat(tYears: number): number {
   const tMonths = tYears * 12;
   return 28 * Math.exp(-tMonths / 90);
 }
@@ -16,11 +16,11 @@ const cycleMin25 = 2019.9;
 const peakSSN = 140;
 
 /**
- * Hathaway (1994) parametric cycle shape
+ * Podladchikova & Van der Linden (2012) parametric cycle shape
  * R(v) = a * v^3 / [exp(v^2/b^2) - c]
  * where v = months since minimum
  */
-function hathawayShape(v: number, a: number, b: number): number {
+function pvlShape(v: number, a: number, b: number): number {
   if (v <= 0) return 0;
   const c = 0.71;
   const denom = Math.exp((v * v) / (b * b)) - c;
@@ -137,7 +137,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     let a_param = 0.01; 
     let b_param = calculateB(a_param);
     for(let iter=0; iter<10; iter++) {
-        const r_peak = hathawayShape(50, a_param, b_param);
+        const r_peak = pvlShape(50, a_param, b_param);
         a_param = a_param * (peakSSN / Math.max(1, r_peak));
         b_param = calculateB(a_param);
     }
@@ -147,12 +147,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const historyPredictions = sortedMonths.map((d) => {
       const v = getMonthsSinceMin(d.yearFloat);
       const prevV = getMonthsSinceMin(d.yearFloat - 1/12);
-      const phi = hathawayShape(v, a_param, b_param) / Math.max(0.1, hathawayShape(prevV, a_param, b_param));
+      const phi = pvlShape(v, a_param, b_param) / Math.max(0.1, pvlShape(prevV, a_param, b_param));
       stateP = phi * phi * stateP + ALPHA_W * stateR;
       const K = stateP / (stateP + ALPHA_V * stateR);
       stateR = stateR + K * (d.ssn - stateR);
       stateP = (1 - K) * stateP;
-      return { ...d, hathawaySSN_history: stateR };
+      return { ...d, kalmanSSN_history: stateR };
     });
 
     // ── 5. Forecast ───────────────────────────────────────────────────────
@@ -168,18 +168,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       const yf = nd.getFullYear() + nd.getMonth() / 12;
       const v = getMonthsSinceMin(yf);
       const prevV = getMonthsSinceMin(yf - 1/12);
-      const phi = hathawayShape(v, a_param, b_param) / Math.max(0.1, hathawayShape(prevV, a_param, b_param));
+      const phi = pvlShape(v, a_param, b_param) / Math.max(0.1, pvlShape(prevV, a_param, b_param));
       currentR = phi * currentR;
       currentP = phi * phi * currentP + ALPHA_W * currentR;
       const resR = Math.max(0, currentR);
       forecastPredictions.push({
         month: `${nd.getFullYear()}-${String(nd.getMonth()+1).padStart(2,"0")}`,
         yearFloat: yf,
-        hathawaySSN_forecast: resR,
+        kalmanSSN_forecast: resR,
         isForecast: true 
       });
 
-      const lat = hathawayLat(yf - cycleMin25);
+      const lat = pvlLat(yf - cycleMin25);
       const n = Math.min(3, Math.max(1, Math.round(resR / 45)));
       for (let s = 0; s < n; s++) {
         syntheticButterfly.push({

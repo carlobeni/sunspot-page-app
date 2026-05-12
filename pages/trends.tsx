@@ -111,7 +111,7 @@ export default function TrendsPage() {
     };
     
     return {
-      mapeKalman: calc('hathawaySSN_history'),
+      mapeKalman: calc('kalmanSSN_history'),
       mapeDmd: calc('dmdSSN_history'),
       lastHistoryYear: lastYear
     };
@@ -366,8 +366,8 @@ export default function TrendsPage() {
                   
                   {showKalman && (
                     <>
-                      <Line isAnimationActive={false} type="monotone" dataKey="hathawaySSN_history" name="Ajuste (Kalman)" stroke="#10b981" strokeWidth={2} dot={false} />
-                      <Line isAnimationActive={false} type="monotone" dataKey="hathawaySSN_forecast" name="Predicción (Kalman)" stroke="#10b981" strokeWidth={2} dot={false} strokeDasharray="8 6" />
+                      <Line isAnimationActive={false} type="monotone" dataKey="kalmanSSN_history" name="Ajuste (Kalman)" stroke="#10b981" strokeWidth={2} dot={false} />
+                      <Line isAnimationActive={false} type="monotone" dataKey="kalmanSSN_forecast" name="Predicción (Kalman)" stroke="#10b981" strokeWidth={2} dot={false} strokeDasharray="8 6" />
                     </>
                   )}
                   
