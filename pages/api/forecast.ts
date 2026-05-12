@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { supabase } from "../../lib/supabase";
+import { Matrix, SingularValueDecomposition } from "ml-matrix";
 
 // --- Per-horizon server-side cache ---
 const cache = new Map<number, { data: any; ts: number }>();
@@ -14,14 +15,6 @@ function hathawayLat(tYears: number): number {
 const cycleMin25 = 2019.9;
 const peakSSN = 140;
 
-// Box-Muller Gaussian sample
-function randGauss(mean: number, sigma: number): number {
-  let u = 0, v = 0;
-  while (u === 0) u = Math.random();
-  while (v === 0) v = Math.random();
-  return mean + sigma * Math.sqrt(-2 * Math.log(u)) * Math.cos(2 * Math.PI * v);
-}
-
 /**
  * Hathaway (1994) parametric cycle shape
  * R(v) = a * v^3 / [exp(v^2/b^2) - c]
@@ -35,7 +28,6 @@ function hathawayShape(v: number, a: number, b: number): number {
 }
 
 function calculateB(a: number): number {
-  // b(a) = 27.12 + 25.15 / (a * 10^3)^1/4
   return 27.12 + 25.15 / Math.pow(a * 1000, 0.25);
 }
 
@@ -44,15 +36,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   const horizon = Math.min(120, Math.max(12, parseInt((req.query.horizon as string) || "60")));
 
-  // Return cached result if fresh
   const hit = cache.get(horizon);
   if (hit && Date.now() - hit.ts < CACHE_TTL) {
-    res.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate");
     return res.status(200).json({ ...hit.data, fromCache: true });
   }
 
   try {
-    // ── 1. Fetch monthly stats from Supabase ──────────────────────────────
+    // ── 1. Fetch Data ─────────────────────────────────────────────────────
     const pageSize = 1000;
     const diskResults = await Promise.all(
       Array.from({ length: 5 }, (_, i) =>
@@ -72,207 +62,268 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     );
     const crops = cropResults.flatMap(r => r.data || []);
 
-    // ── 2. Build monthlyStats ─────────────────────────────────────────────
-    const monthlyMap = new Map<string, { ssn: number; lats: number[] }>();
+    // ── 2. Process Monthly SSN and DMD Mesh ───────────────────────────────
+    const monthlyMap = new Map<string, { ssn: number; monthsSince2010: number }>();
+    const latBins = 25; // Align with 4-degree visualization grid (100 / 4)
+    const binSize = 4;
+    
+    // Group everything by month (YYYY-MM)
     disks.forEach((d: any) => {
       if (!d.date_obs) return;
       const dt = new Date(d.date_obs);
       const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
-      const entry = monthlyMap.get(key) ?? { ssn: 0, lats: [] };
+      const entry = monthlyMap.get(key) ?? { ssn: 0, monthsSince2010: 0 };
       entry.ssn += d.num_crops || 0;
       monthlyMap.set(key, entry);
     });
+
+    const sortedMonthKeys = Array.from(monthlyMap.keys()).sort();
+    const historyMonthsCount = sortedMonthKeys.length;
+    
+    // Snapshots: [latBin][monthIdx]
+    const snapshots = Array.from({ length: latBins }, () => new Array(historyMonthsCount).fill(0));
+    
     crops.forEach((c: any) => {
       if (!c.date_obs || c.lat == null) return;
       const dt = new Date(c.date_obs);
       const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
-      monthlyMap.get(key)?.lats.push(c.lat);
+      const mIdx = sortedMonthKeys.indexOf(key);
+      if (mIdx !== -1) {
+        // Precise alignment with 4-degree grid used in binnedMap
+        const binIdx = Math.round(c.lat / 4) + 12; // -48° is index 0, 0° is index 12, 48° is index 24
+        if (binIdx >= 0 && binIdx < latBins) {
+          snapshots[binIdx][mIdx] += 1;
+        }
+      }
     });
 
-    const sortedMonths = Array.from(monthlyMap.entries())
-      .sort(([a], [b]) => a.localeCompare(b))
-      .map(([month, v]) => ({
-        month,
-        ssn: v.ssn,
-        yearFloat: (() => { const d = new Date(month + "-01"); return d.getFullYear() + d.getMonth() / 12; })(),
-      }));
+    const sortedMonths = sortedMonthKeys.map(key => {
+      const d = monthlyMap.get(key)!;
+      const [y, m] = key.split("-").map(Number);
+      return {
+        month: key,
+        ssn: d.ssn,
+        yearFloat: y + (m - 1) / 12
+      };
+    });
 
-    // ── 3. Build binned butterfly (historical) ────────────────────────────
-    const binnedMap = new Map<string, { year: number; lat: number; area: number }>();
+    // ── 3. Build binned butterfly (historical) for UI ──────────────────────
+    const binnedMap = new Map<string, { year: number; lat: number; ssn: number }>();
     crops.forEach((c: any) => {
       if (!c.date_obs || c.lat == null) return;
       const dt = new Date(c.date_obs);
       const yearFloat = dt.getFullYear() + (dt.getMonth()) / 12 + dt.getDate() / 365;
-      
-      // DOWNSAMPLING: Bin by 0.25 years (3 months) and 4 degrees latitude strictly for UI performance
       const bYear = (Math.round(yearFloat * 4) / 4).toFixed(2);
       const bLat  = (Math.round(c.lat / 4) * 4).toFixed(1);
       const key = `${bYear}_${bLat}`;
-      
       if (!binnedMap.has(key))
-        binnedMap.set(key, { year: parseFloat(bYear), lat: parseFloat(bLat), area: 30 }); // Slightly larger area points to compensate fewer density
+        binnedMap.set(key, { year: parseFloat(bYear), lat: parseFloat(bLat), ssn: 30 });
       else {
         const existing = binnedMap.get(key)!;
-        existing.area = Math.min(100, existing.area + 10);
+        existing.ssn = Math.min(100, existing.ssn + 10);
       }
     });
     const historicalButterflyAll = Array.from(binnedMap.values());
 
-    // ── 4. Kalman Filter Initialization ─────────────────────────────────
-    const ALPHA_W = 0.2; // Process noise coeff
-    const ALPHA_V = 2.5; // Measurement noise coeff
-    
-    // Last observed 13-month smoothed data is our starting point
-    // For simplicity, we use the last available sorted month
-    const startMonthIdx = sortedMonths.length - 1;
-    const startSsn = sortedMonths[startMonthIdx]?.ssn || 0;
-    
-    // Months since Cycle 25 minimum
-    const cyc25StartMonth = Math.round((cycleMin25 - (sortedMonths[0]?.yearFloat || cycleMin25)) * 12);
-    const monthsSinceMinOffset = Math.max(1, startMonthIdx - cyc25StartMonth);
+    // ── 4. Kalman Filter ──────────────────────────────────────────────────
+    const ALPHA_W = 0.2; 
+    const ALPHA_V = 2.5; 
+    const cycleMin24 = 2008.9;
+    const getMonthsSinceMin = (yearFloat: number) => {
+      const start = yearFloat >= cycleMin25 ? cycleMin25 : cycleMin24;
+      return Math.max(1, Math.round((yearFloat - start) * 12));
+    };
 
-    // Estimate 'a' for Cycle 25 from observed peak
-    // Peak condition: dR/dv = 0, usually v_peak approx 3.5-4.5 yrs (~48 months)
-    // We calibrate 'a' such that max(R) = peakSSN
-    let a_param = 0.01; // Initial guess
+    let a_param = 0.01; 
     let b_param = calculateB(a_param);
-    // Rough calibration loop to find 'a' that matches observed peakSSN
     for(let iter=0; iter<10; iter++) {
         const r_peak = hathawayShape(50, a_param, b_param);
-        a_param *= (peakSSN / Math.max(1, r_peak));
+        a_param = a_param * (peakSSN / Math.max(1, r_peak));
         b_param = calculateB(a_param);
     }
 
-    // --- KALMAN FILTER LOOP (Last 6 months correction) ---
-    let stateR = startSsn;
-    let stateP = 10.0; // Initial error covariance
-
-    // Stabilize with last 6 months of data
-    const last6 = sortedMonths.slice(-6);
-    last6.forEach((obs, i) => {
-        const v = monthsSinceMinOffset - (5 - i);
-        if (v <= 1) return;
-        
-        // 1. Predict
-        const phi = hathawayShape(v, a_param, b_param) / hathawayShape(v - 1, a_param, b_param);
-        stateR = phi * stateR;
-        stateP = phi * phi * stateP + ALPHA_W * stateR;
-        
-        // 2. Update
-        const K = stateP / (stateP + ALPHA_V * stateR);
-        stateR = stateR + K * (obs.ssn - stateR);
-        stateP = (1 - K) * stateP;
+    let stateR = sortedMonths[0]?.ssn || 0;
+    let stateP = 10.0; 
+    const historyPredictions = sortedMonths.map((d) => {
+      const v = getMonthsSinceMin(d.yearFloat);
+      const prevV = getMonthsSinceMin(d.yearFloat - 1/12);
+      const phi = hathawayShape(v, a_param, b_param) / Math.max(0.1, hathawayShape(prevV, a_param, b_param));
+      stateP = phi * phi * stateP + ALPHA_W * stateR;
+      const K = stateP / (stateP + ALPHA_V * stateR);
+      stateR = stateR + K * (d.ssn - stateR);
+      stateP = (1 - K) * stateP;
+      return { ...d, hathawaySSN_history: stateR };
     });
 
-    // ── 5. Build forecast months ──────────────────────────────────────────
-    const lastMonth = sortedMonths[sortedMonths.length - 1] || { month: "2024-01", yearFloat: 2024.0, ssn: 0 };
-    const lastDate  = new Date(lastMonth.month + "-01");
-
-    const historyPredictions = sortedMonths.map(d => ({
-      month: d.month,
-      yearFloat: d.yearFloat,
-      actualSsn: d.ssn,
-      historySsn: d.ssn,
-      isForecast: false,
-    }));
-
+    // ── 5. Forecast ───────────────────────────────────────────────────────
     const forecastPredictions: any[] = [];
     const syntheticButterfly: any[] = [];
-
-    // Current state for extrapolation
     let currentR = stateR;
     let currentP = stateP;
 
-    for (let i = 0; i < horizon; i++) {
-      const nd = new Date(lastDate);
-      nd.setMonth(lastDate.getMonth() + i + 1);
-      const mStr = nd.toISOString().slice(0, 7);
-      const yf   = nd.getFullYear() + nd.getMonth() / 12;
-      const v    = monthsSinceMinOffset + i + 1;
-
-      // Kalman extrapolation
-      const phi = hathawayShape(v, a_param, b_param) / hathawayShape(v - 1, a_param, b_param);
+    for (let i = 1; i <= horizon; i++) {
+      const lastMonth = sortedMonths[sortedMonths.length - 1];
+      const nd = new Date(lastMonth.month + "-01");
+      nd.setMonth(nd.getMonth() + i);
+      const yf = nd.getFullYear() + nd.getMonth() / 12;
+      const v = getMonthsSinceMin(yf);
+      const prevV = getMonthsSinceMin(yf - 1/12);
+      const phi = hathawayShape(v, a_param, b_param) / Math.max(0.1, hathawayShape(prevV, a_param, b_param));
       currentR = phi * currentR;
       currentP = phi * phi * currentP + ALPHA_W * currentR;
-      
       const resR = Math.max(0, currentR);
-      
-      forecastPredictions.push({ 
-        month: mStr, 
-        yearFloat: yf, 
-        hathawaySSN: resR, 
+      forecastPredictions.push({
+        month: `${nd.getFullYear()}-${String(nd.getMonth()+1).padStart(2,"0")}`,
+        yearFloat: yf,
+        hathawaySSN_forecast: resR,
         isForecast: true 
       });
 
-      // Butterfly scatter: frequency proportional to predicted SSN
-      // Spörers Law (exponential) from Eq 8 Hathaway 2015
-      const tl  = (yf - cycleMin25);
-      const lat = hathawayLat(tl);
-      
-      // Points per hemisphere: scale with predicted number, heavily throttled
+      const lat = hathawayLat(yf - cycleMin25);
       const n = Math.min(3, Math.max(1, Math.round(resR / 45)));
       for (let s = 0; s < n; s++) {
-        const area = 15 + Math.random() * 20;
-        syntheticButterfly.push({ year: yf, lat: randGauss(+lat, 5.5), area, isPredicted: true });
-        syntheticButterfly.push({ year: yf, lat: randGauss(-lat, 5.5), area, isPredicted: true });
+        syntheticButterfly.push({
+          year: yf + Math.random() * 0.05,
+          lat: lat + (Math.random() - 0.5) * 15,
+          ssn: 15 + Math.random() * 20
+        });
       }
     }
 
     const allPredictions = [...historyPredictions, ...forecastPredictions];
-    const predMinYear = allPredictions[0]?.yearFloat ?? 0;
-    const predMaxYear = allPredictions[allPredictions.length - 1]?.yearFloat ?? 1;
-
-    // Filter historical butterfly to domain
     const historicalButterfly = historicalButterflyAll.filter(
-      p => p.year >= predMinYear && p.year <= predMaxYear
+      p => p.year >= allPredictions[0].yearFloat && p.year <= allPredictions[allPredictions.length-1].yearFloat
     );
 
-    // ── 6. Density cache for solar disk viewer (forecast months only) ─────
-    // Indexed by forecastPredictions index for O(1) lookup on client
-    const DENSITY_WINDOW_MONTHS = 3;
-    const allSpots = [...historicalButterfly, ...syntheticButterfly];
+    // ── 6. Experimental DMD Spörer (Latitudinal Migration) ────────────────
+    const dmdButterflyAdjustment: any[] = [];
+    const dmdButterflyForecast: any[] = [];
+    const adjustmentIntegrals: Record<number, number> = {};
+    const forecastIntegrals: number[] = [];
+    let ssnScaleK = 1.0; 
 
-    // Group spots by yearFloat rounded to 0.1 for fast lookup
-    const spotByBin = new Map<number, number[]>();
-    allSpots.forEach(p => {
-      const bin = Math.round(p.year * 10); // tenths of year
-      const arr = spotByBin.get(bin) ?? [];
-      arr.push(p.lat);
-      spotByBin.set(bin, arr);
-    });
+    if (historyMonthsCount > 10) {
+      try {
+        const X1 = new Matrix(snapshots.map(row => row.slice(0, -1)));
+        const X2 = new Matrix(snapshots.map(row => row.slice(1)));
 
-    const densityCache: Record<number, { lat: number; freq: number }[]> = {};
-    forecastPredictions.forEach((pred, fi) => {
-      const pIdx = historyPredictions.length + fi;
-      const windowBins: number[] = [];
-      for (let db = -DENSITY_WINDOW_MONTHS * 10; db <= DENSITY_WINDOW_MONTHS * 10; db++) {
-        windowBins.push(Math.round(pred.yearFloat * 10) + db);
+        // Optimized DMD: Use Truncated SVD to capture physical modes and ignore noise
+        const svd = new SingularValueDecomposition(X1);
+        const U = svd.leftSingularVectors;
+        const V = svd.rightSingularVectors;
+        const s = svd.diagonal;
+        
+        const k = Math.min(10, s.length);
+        const Sk = Matrix.zeros(k, k);
+        for (let i = 0; i < k; i++) Sk.set(i, i, 1 / s[i]);
+        
+        const Uk = U.subMatrix(0, U.rows - 1, 0, k - 1);
+        const Vk = V.subMatrix(0, V.rows - 1, 0, k - 1);
+        
+        const X1_pinv = Vk.mmul(Sk).mmul(Uk.transpose());
+        const A = X2.mmul(X1_pinv);
+        
+        // Adjustment (Integral calculation)
+        let totalHistSSN = 0;
+        let totalHistIntegral = 0;
+
+        for (let t = 0; t < historyMonthsCount; t++) {
+          let sum = 0;
+          if (t > 0) {
+            const prevV = new Matrix([snapshots.map(row => row[t-1])]).transpose();
+            const predV = A.mmul(prevV);
+            for (let b = 0; b < latBins; b++) {
+              const val = predV.get(b, 0);
+              sum += Math.max(0, val);
+              const histVal = snapshots[b][t];
+              if (t % 3 === 0 && val > 0.1 && histVal > 0) {
+                dmdButterflyAdjustment.push({
+                  year: sortedMonths[t].yearFloat,
+                  lat: (b - 12) * 4, 
+                  ssn: Math.min(100, 15 + val * 20) 
+                });
+              }
+            }
+          } else {
+            sum = snapshots.reduce((acc, row) => acc + row[0], 0);
+          }
+          adjustmentIntegrals[t] = sum;
+          totalHistSSN += sortedMonths[t].ssn || 0;
+          totalHistIntegral += sum;
+        }
+
+        // Auto-scaling factor to match SSN magnitude
+        ssnScaleK = totalHistIntegral > 0 ? (totalHistSSN / totalHistIntegral) : 1.0;
+
+        // Forecast (Integral calculation)
+        let currentV = new Matrix([snapshots.map(row => row[historyMonthsCount - 1])]).transpose();
+        forecastPredictions.forEach((p, i) => {
+          currentV = A.mmul(currentV).mul(0.98); 
+          let sum = 0;
+          for (let b = 0; b < latBins; b++) {
+            const val = currentV.get(b, 0);
+            sum += Math.max(0, val);
+            if (i % 3 === 0 && val > 0.4) { 
+              dmdButterflyForecast.push({
+                year: p.yearFloat,
+                lat: (b - 12) * 4, 
+                ssn: Math.min(100, 20 + val * 25)
+              });
+            }
+          }
+          forecastIntegrals.push(sum * ssnScaleK);
+        });
+
+        // Scale adjustment integrals
+        for (let t in adjustmentIntegrals) {
+          adjustmentIntegrals[t] *= ssnScaleK;
+        }
+      } catch (e) {
+        console.error("DMD Spörer Error:", e);
       }
-      const lats: number[] = [];
-      windowBins.forEach(b => spotByBin.get(b)?.forEach(l => lats.push(l)));
+    }
 
-      const densityMap: { lat: number; freq: number }[] = [];
-      for (let l = -50; l <= 50; l++) {
-        const freq = lats.filter(v => Math.abs(v - l) < 0.5).length;
-        if (freq > 0) densityMap.push({ lat: l, freq });
+    // ── 7. Experimental DMD 1D (SSN) ──────────────────────────────────────
+    const dmdHistory: number[] = sortedMonths.map(m => m.ssn);
+    let dmdLambda = 1.0;
+    if (dmdHistory.length > 5) {
+      let numerator = 0;
+      let denominator = 0;
+      for (let t = 0; t < dmdHistory.length - 1; t++) {
+        numerator += dmdHistory[t] * dmdHistory[t + 1];
+        denominator += dmdHistory[t] * dmdHistory[t];
       }
-      densityCache[pIdx] = densityMap;
+      dmdLambda = denominator > 0 ? numerator / denominator : 1.0;
+      dmdLambda = Math.min(1.05, Math.max(0.9, dmdLambda)); 
+    }
+
+    const finalPredictions = allPredictions.map((p, i) => {
+      const fIdx = i - sortedMonths.length;
+      const valHistory = !p.isForecast ? (adjustmentIntegrals[i] || 0) : null;
+      const valForecast = p.isForecast ? (forecastIntegrals[fIdx] || 0) : null;
+      
+      return {
+        ...p,
+        historySsn: p.ssn,
+        dmdSSN_history: valHistory !== null ? valHistory * ssnScaleK : null,
+        dmdSSN_forecast: valForecast !== null ? valForecast * ssnScaleK : null
+      };
     });
 
     const result = {
-      predictions: allPredictions,
+      predictions: finalPredictions,
       butterflyHistorical: historicalButterfly,
       butterflyForecast: syntheticButterfly,
-      densityCache,
-      forecastStartIndex: historyPredictions.length,
-      xDomain: [predMinYear, predMaxYear] as [number, number],
+      butterflyDmdAdjustment: dmdButterflyAdjustment,
+      butterflyDmdForecast: dmdButterflyForecast,
+      xDomain: [allPredictions[0].yearFloat, allPredictions[allPredictions.length-1].yearFloat]
     };
 
     cache.set(horizon, { data: result, ts: Date.now() });
-    res.setHeader("Cache-Control", "s-maxage=3600, stale-while-revalidate");
-    return res.status(200).json({ ...result, fromCache: false });
+    res.status(200).json(result);
 
-  } catch (err: any) {
-    return res.status(500).json({ error: err.message });
+  } catch (error) {
+    console.error("Forecast API error:", error);
+    res.status(500).json({ error: "Internal server error" });
   }
 }

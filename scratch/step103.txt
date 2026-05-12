@@ -1,0 +1,10 @@
+Construir el modelo a partir de **DMD (Dynamic Mode Decomposition)** es una alternativa fascinante y muy moderna (ampliamente utilizada en mecánica de fluidos y sistemas complejos) que cambiaría el paradigma de tu aplicación.
+
+Aquí te explico la diferencia fundamental y cómo se compararía con tu implementación actual:
+
+### 1. Modelo Empírico (Hathaway) vs. Modelo Basado en Datos (DMD)
+*   **Tu modelo actual (Hathaway + Kalman)** es un enfoque **"Model-Driven"**. Tú le "dices" al algoritmo cómo es un ciclo solar (una curva con ascenso rápido y descenso lento) y el filtro de Kalman solo ajusta los parámetros para que coincida con la realidad.
+*   **DMD** es un enfoque **"Data-Driven"**. No asume ninguna forma predefinida. DMD analiza las "instantáneas" (snapshots) de tus datos y busca el mejor operador lineal que explique cómo el sistema evoluciona del tiempo $t$ al $t+1$. Es decir, el algoritmo "descubriría" por sí solo que existe un ciclo de ~11 años.
+
+### 2. Dimensión de los Datos
+<truncated 2083 bytes>
