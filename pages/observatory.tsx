@@ -139,6 +139,11 @@ export default function ObservatoryPage() {
       setDetections([]);
       setActiveTab("imagen");
       setSelectedGalleryImage(null);
+      setMetadata((prev: any) => ({
+        ...prev,
+        date: new Date().toISOString().split("T")[0],
+        time: new Date().toLocaleTimeString('en-GB', { hour: "2-digit", minute: "2-digit" }),
+      }));
     }
   };
 
@@ -737,6 +742,17 @@ function ImageTab({ metadata, setMetadata, image, setImage, zoom, setZoom, offse
         if (result.isValid) {
           const objectUrl = URL.createObjectURL(file);
           processAndAlignImage(objectUrl);
+          
+          if (imgObj.obs_datetime) {
+            const parts = imgObj.obs_datetime.split('T');
+            const dateStr = parts[0];
+            const timeStr = parts[1]?.slice(0, 5);
+            setMetadata((prev: any) => ({
+              ...prev,
+              date: dateStr,
+              time: timeStr || prev.time
+            }));
+          }
         } else {
           setUploadError(result.errorMsg || "Error al validar la imagen de la galería.");
           setValidatingImage(false);
@@ -899,6 +915,13 @@ function ImageTab({ metadata, setMetadata, image, setImage, zoom, setZoom, offse
     setSelectedGalleryImage(null);
     setValidatingImage(true);
     setUploadError(null);
+    
+    // Set default current date and time on local upload
+    setMetadata((prev: any) => ({
+      ...prev,
+      date: new Date().toISOString().split("T")[0],
+      time: new Date().toLocaleTimeString('en-GB', { hour: "2-digit", minute: "2-digit" }),
+    }));
     
     await new Promise(r => setTimeout(r, 1500));
 

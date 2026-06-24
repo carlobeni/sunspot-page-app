@@ -57,16 +57,15 @@ export default function RecordsPage() {
   const [fetchedYears, setFetchedYears] = useState<Record<number, string[]>>({});
   const [loadingDates, setLoadingDates] = useState(false);
 
-  // Fetch initial data (stats)
+  // Fetch initial data (available dates)
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const res = await fetch('/api/dataset-stats');
-        if (!res.ok) throw new Error("Failed to fetch statistics");
+        const res = await fetch('/api/available-dates');
+        if (!res.ok) throw new Error("Failed to fetch available dates");
         const jsonData = await res.json();
-        setData(jsonData);
         
-        // Initial dates from stats
+        // Initial dates
         if (jsonData.availableDates?.length > 0) {
             const sorted = [...jsonData.availableDates].sort((a,b) => b.localeCompare(a));
             setSelectedDate(sorted[0]);

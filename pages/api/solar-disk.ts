@@ -2,6 +2,7 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { supabase } from "../../lib/supabase";
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  res.setHeader('Cache-Control', 'no-store, max-age=0, must-revalidate');
   try {
     const { date } = req.query;
 
@@ -34,22 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     }
 
     if (!fullDisks || fullDisks.length === 0) {
-      // If we don't find the exact date requested, try fetching the first available
-      if (date) {
-        const { data: anyDisk } = await supabase
-          .from('full_disk_images')
-          .select('*')
-          .order('date_obs', { ascending: false })
-          .limit(1);
-        
-        if (anyDisk && anyDisk.length > 0) {
-           fullDisks.push(anyDisk[0]);
-        } else {
-            return res.status(404).json({ error: "No full disk image found for this date." });
-        }
-      } else {
-         return res.status(404).json({ error: "No full disk image found for this date." });
-      }
+      return res.status(404).json({ error: "No full disk image found for this date." });
     }
 
     const fullDisk = fullDisks[0];
