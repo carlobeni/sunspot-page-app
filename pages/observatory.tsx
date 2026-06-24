@@ -31,6 +31,7 @@ import {
 } from "lucide-react";
 import { useAuth } from "../lib/AuthContext";
 import { supabase } from "../lib/supabase";
+import { createClient as createSupabaseClient } from "@supabase/supabase-js";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { runYoloInference } from "../lib/yolo-inference";
@@ -62,6 +63,7 @@ export default function ObservatoryPage() {
   const [selectedDetection, setSelectedDetection] = useState<number | null>(null);
   const [viewBox, setViewBox] = useState({ w: 1024, h: 1024 });
   const [confirmed, setConfirmed] = useState(false);
+  const [selectedGalleryImage, setSelectedGalleryImage] = useState<any | null>(null);
   
   // Alignment states (Lifted from ImageTab)
   const [zoom, setZoom] = useState(1);
@@ -136,6 +138,7 @@ export default function ObservatoryPage() {
     } else {
       setDetections([]);
       setActiveTab("imagen");
+      setSelectedGalleryImage(null);
     }
   };
 
@@ -466,6 +469,7 @@ export default function ObservatoryPage() {
             offset={offset}
             setOffset={setOffset}
             onNext={handleBakeAndNext}
+            setSelectedGalleryImage={setSelectedGalleryImage}
           />
         )}
         {activeTab === "agrupamiento" && (
@@ -506,6 +510,9 @@ export default function ObservatoryPage() {
               viewBox={viewBox} 
               zoom={zoom} 
               offset={offset} 
+              user={user}
+              selectedGalleryImage={selectedGalleryImage}
+              setSelectedGalleryImage={setSelectedGalleryImage}
             />
           )}
         </div>
@@ -556,7 +563,7 @@ function GalleryImagePreview({ img, publicUrl, onSelect }: any) {
 
   return (
     <button 
-      onClick={() => onSelect(publicUrl)}
+      onClick={() => onSelect(img)}
       className="group relative aspect-square rounded-xl overflow-hidden border border-slate-200 bg-black hover:ring-2 hover:ring-emerald-500 hover:ring-offset-2 transition-all shadow-sm"
     >
       {!loaded && (
@@ -606,7 +613,7 @@ function GalleryImagePreview({ img, publicUrl, onSelect }: any) {
 /* ─────────────────────────────────────────────── */
 /*  IMAGE TAB                                      */
 /* ─────────────────────────────────────────────── */
-function ImageTab({ metadata, setMetadata, image, setImage, zoom, setZoom, offset, setOffset, onNext }: any) {
+function ImageTab({ metadata, setMetadata, image, setImage, zoom, setZoom, offset, setOffset, onNext, setSelectedGalleryImage }: any) {
   const [mode, setMode] = useState<"upload" | "gallery" | null>(null);
   const [fullscreen, setFullscreen] = useState(false);
 
@@ -715,7 +722,9 @@ function ImageTab({ metadata, setMetadata, image, setImage, zoom, setZoom, offse
     return groups;
   }, [galleryImages]);
 
-  const handleSelectGalleryImage = async (url: string) => {
+  const handleSelectGalleryImage = async (imgObj: any) => {
+    const url = imgObj.publicUrl;
+    setSelectedGalleryImage(imgObj);
     setMode("upload"); // switch to "upload" to show validating spinner
     setValidatingImage(true);
     setUploadError(null);
@@ -731,10 +740,12 @@ function ImageTab({ metadata, setMetadata, image, setImage, zoom, setZoom, offse
         } else {
           setUploadError(result.errorMsg || "Error al validar la imagen de la galería.");
           setValidatingImage(false);
+          setSelectedGalleryImage(null);
         }
     } catch (e) {
         setUploadError("Error al cargar la imagen de la galería.");
         setValidatingImage(false);
+        setSelectedGalleryImage(null);
     }
   };
   
@@ -885,6 +896,7 @@ function ImageTab({ metadata, setMetadata, image, setImage, zoom, setZoom, offse
     const file = e.target.files?.[0];
     if (!file) return;
 
+    setSelectedGalleryImage(null);
     setValidatingImage(true);
     setUploadError(null);
     
@@ -2033,9 +2045,222 @@ function ClassificationTab({ image, detections, setDetections, selectedDetection
 /* ─────────────────────────────────────────────── */
 /*  REPORT TAB                                     */
 /* ─────────────────────────────────────────────── */
-function ReportTab({ metadata, detections, image, viewBox, zoom, offset }: any) {
+function ReportTab({ metadata, detections, image, viewBox, zoom, offset, user, selectedGalleryImage, setSelectedGalleryImage }: any) {
   const reportRef = useRef<HTMLDivElement>(null);
   const [downloading, setDownloading] = useState(false);
+
+  const [savingRecord, setSavingRecord] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const [saveError, setSaveError] = useState<string | null>(null);
+
+  const isAuthorizedToRegister = user?.id === '56d29030-539b-4973-a7a1-2f7f6773aa8b' || user?.id === '99723c9f-9d24-4687-94ea-19f28b58e3bb';
+
+  const getCropBlob = async (imageSrc: string, det: any, vb: any): Promise<Blob> => {
+    return new Promise((resolve, reject) => {
+      const img = new window.Image();
+      img.crossOrigin = "anonymous";
+      img.src = imageSrc;
+      img.onload = () => {
+        try {
+          const scaleX = img.width / vb.w;
+          const scaleY = img.height / vb.h;
+
+          const canvas = document.createElement("canvas");
+          canvas.width = 224;
+          canvas.height = 224;
+          const ctx = canvas.getContext("2d");
+          if (!ctx) {
+            reject(new Error("No se pudo obtener el contexto del canvas"));
+            return;
+          }
+
+          const srcX = (det.x - det.w / 2) * scaleX;
+          const srcY = (det.y - det.h / 2) * scaleY;
+          const srcW = det.w * scaleX;
+          const srcH = det.h * scaleY;
+
+          ctx.fillStyle = "black";
+          ctx.fillRect(0, 0, 224, 224);
+
+          const scale = Math.min(1, 224 / srcW, 224 / srcH);
+          const dstW = srcW * scale;
+          const dstH = srcH * scale;
+          const dstX = (224 - dstW) / 2;
+          const dstY = (224 - dstH) / 2;
+
+          ctx.drawImage(img, srcX, srcY, srcW, srcH, dstX, dstY, dstW, dstH);
+
+          canvas.toBlob((blob) => {
+            if (blob) {
+              resolve(blob);
+            } else {
+              reject(new Error("La conversión del canvas a blob falló"));
+            }
+          }, "image/jpeg", 0.95);
+        } catch (err) {
+          reject(err);
+        }
+      };
+      img.onerror = () => reject(new Error("Error al cargar la imagen de origen"));
+    });
+  };
+
+  const handleSaveToRecords = async () => {
+    if (!image) return;
+    setSavingRecord(true);
+    setSaveSuccess(null);
+    setSaveError(null);
+
+    const generateUUID = () => {
+      if (typeof window !== 'undefined' && window.crypto && window.crypto.randomUUID) {
+        return window.crypto.randomUUID();
+      }
+      return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function (c) {
+        const r = (Math.random() * 16) | 0;
+        const v = c === 'x' ? r : (r & 0x3) | 0x8;
+        return v.toString(16);
+      });
+    };
+
+    try {
+      const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+      const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || "";
+      const supabaseAdmin = createSupabaseClient(supabaseUrl, supabaseAnonKey, {
+        auth: {
+          persistSession: false,
+          autoRefreshToken: false,
+          detectSessionInUrl: false
+        }
+      });
+
+      // 1. Convert baked full disk image to Blob
+      const byteString = atob(image.split(',')[1]);
+      const mimeString = image.split(',')[0].split(':')[1].split(';')[0];
+      const ab = new ArrayBuffer(byteString.length);
+      const ia = new Uint8Array(ab);
+      for (let i = 0; i < byteString.length; i++) {
+        ia[i] = byteString.charCodeAt(i);
+      }
+      const fullDiskBlob = new Blob([ab], { type: mimeString });
+
+      // 2. Upload full disk image to storage
+      const fileName = `HMI_${metadata.date.replace(/-/g, "")}_${Date.now()}.jpg`;
+      const { error: uploadError } = await supabaseAdmin.storage
+        .from('full-disk-images')
+        .upload(`images/${fileName}`, fullDiskBlob, {
+          contentType: 'image/jpeg',
+          upsert: true
+        });
+
+      if (uploadError) {
+        throw new Error(`Error al subir imagen de disco completo: ${uploadError.message}`);
+      }
+
+      // 3. Insert record into full_disk_images with explicit UUIDs
+      const fullDiskId = generateUUID();
+      const datasetId = "be7cb32f-b4a5-5a19-b9bc-fc5c280fddaa"; // the active dataset in the DB
+
+      const { data: fdData, error: fdError } = await supabaseAdmin
+        .from('full_disk_images')
+        .insert({
+          id: fullDiskId,
+          dataset_id: datasetId,
+          date_obs: metadata.date,
+          file_name: fileName,
+          storage_bucket: 'full-disk-images',
+          storage_path: `images/${fileName}`,
+          num_crops: detections.length,
+          width: viewBox.w || 1024,
+          height: viewBox.h || 1024
+        })
+        .select();
+
+      if (fdError || !fdData || fdData.length === 0) {
+        throw new Error(`Error al guardar datos de disco completo: ${fdError?.message || "Sin datos retornados"}`);
+      }
+
+      // 4. Generate & upload crop images, and insert records into sunspot_crops
+      const processCrop = async (det: any, index: number) => {
+        const cropBlob = await getCropBlob(image, det, viewBox);
+        const cropFileName = `crop_${metadata.date.replace(/-/g, "")}_${Date.now()}_${index}.jpg`;
+        
+        // Upload crop to storage
+        const { error: cropUploadError } = await supabaseAdmin.storage
+          .from('sunspot-crops')
+          .upload(`images/${cropFileName}`, cropBlob, {
+            contentType: 'image/jpeg',
+            upsert: true
+          });
+
+        if (cropUploadError) {
+          throw new Error(`Error al subir recorte ${index}: ${cropUploadError.message}`);
+        }
+
+        const cropId = generateUUID();
+        const zClass = det.mcintosh?.[0] || "A";
+        const pClass = det.mcintosh?.[1] || "x";
+        const cClass = det.mcintosh?.[2] || "x";
+
+        // Insert crop record matching exact table columns
+        const { error: cropDbError } = await supabaseAdmin
+          .from('sunspot_crops')
+          .insert({
+            id: cropId,
+            full_disk_image_id: fullDiskId,
+            dataset_id: datasetId,
+            date_obs: metadata.date,
+            crop_filename: cropFileName,
+            storage_bucket: 'sunspot-crops',
+            storage_path: `images/${cropFileName}`,
+            full_disk_filename: fileName,
+            crop_index: index,
+            z_class: zClass,
+            p_class: pClass,
+            c_class: cClass,
+            mcintosh_full: det.mcintosh || "Axx",
+            lat: det.lat,
+            lon: det.lon,
+            mag_class: det.mag_class || "None",
+            area: 50,
+            x_center_px: Math.round(det.x),
+            y_center_px: Math.round(det.y),
+            orig_w_px: Math.round(det.w),
+            orig_h_px: Math.round(det.h),
+            square_size: 224,
+            yolo_conf: det.score || 0.9,
+          });
+
+        if (cropDbError) {
+          throw new Error(`Error al guardar recorte ${index} en la BD: ${cropDbError.message}`);
+        }
+      };
+
+      for (let i = 0; i < detections.length; i++) {
+        await processCrop(detections[i], i);
+      }
+
+      // 5. Delete from gallery (live_captures) if it was selected from gallery
+      if (selectedGalleryImage) {
+        const { error: deleteError } = await supabaseAdmin
+          .from('live_captures')
+          .delete()
+          .eq('id', selectedGalleryImage.id);
+
+        if (deleteError) {
+          console.error("Error deleting from live_captures:", deleteError);
+        }
+        setSelectedGalleryImage(null);
+      }
+
+      setSaveSuccess("El registro y la clasificación se han cargado exitosamente en la base de datos.");
+
+    } catch (err: any) {
+      console.error(err);
+      setSaveError(err.message || "Ocurrió un error inesperado al guardar el registro.");
+    } finally {
+      setSavingRecord(false);
+    }
+  };
 
   const handleDownloadPDF = async () => {
     setDownloading(true);
@@ -2310,6 +2535,40 @@ function ReportTab({ metadata, detections, image, viewBox, zoom, offset }: any) 
             {/* Redundant institutional text removed */}
         </div>
       </div>
+
+      {isAuthorizedToRegister && (
+        <div className="max-w-4xl w-full flex flex-col items-center">
+          {saveSuccess && (
+            <div className="w-full p-4 mb-4 bg-emerald-50 border border-emerald-200 text-emerald-800 rounded-xl text-sm font-bold flex items-center gap-2">
+              <CheckCircle2 className="h-5 w-5 text-emerald-600 shrink-0" />
+              {saveSuccess}
+            </div>
+          )}
+          {saveError && (
+            <div className="w-full p-4 mb-4 bg-red-50 border border-red-200 text-red-800 rounded-xl text-sm font-bold flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-red-600 shrink-0" />
+              {saveError}
+            </div>
+          )}
+          <button 
+            onClick={handleSaveToRecords}
+            disabled={savingRecord || !!saveSuccess}
+            className="w-full px-5 py-4 mb-4 bg-emerald-600 text-white font-bold text-sm rounded-xl hover:bg-emerald-700 shadow-xl transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+          >
+            {savingRecord ? (
+              <>
+                <Loader2 className="h-5 w-5 animate-spin" />
+                Guardando en registros oficiales...
+              </>
+            ) : (
+              <>
+                <Save className="h-5 w-5" />
+                Guardar en Registros Oficiales {selectedGalleryImage && "(y remover de galería)"}
+              </>
+            )}
+          </button>
+        </div>
+      )}
 
       {/* External Action Button (Not visible in Ref/Canvas capture if handled carefully, or just at the bottom) */}
       <button 

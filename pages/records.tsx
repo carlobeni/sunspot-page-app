@@ -428,26 +428,30 @@ export default function RecordsPage() {
                         <h4 className="text-[10px] font-black border-b border-[#f1f5f9] pb-2 text-[#64748b] uppercase tracking-widest">Resumen Visual del Disco</h4>
                         <div className="aspect-square max-w-sm mx-auto bg-black rounded-full overflow-hidden border-4 border-[#f1f5f9] relative">
                             <img src={selectedSolarData.base64Image} alt="Full Disk" className="w-full h-full object-cover" />
-                            <svg viewBox="0 0 1024 1024" className="absolute inset-0 w-full h-full opacity-40">
-                                {selectedSolarData.crops?.map((d: any, idx: number) => {
-                                    const x = d.x_center_px || 0;
-                                    const y = d.y_center_px || 0;
-                                    const w = d.orig_w_px || 50;
-                                    const h = d.orig_h_px || 50;
-                                    return (
-                                        <rect 
-                                            key={idx} 
-                                            x={x - w/2} 
-                                            y={y - h/2} 
-                                            width={w} 
-                                            height={h} 
-                                            fill="none" 
-                                            stroke="#22c55e" 
-                                            strokeWidth="4" 
-                                        />
-                                    );
-                                })}
-                            </svg>
+                             <svg 
+                                 viewBox={`0 0 ${selectedSolarData.fullDiskMetadata?.width || 1024} ${selectedSolarData.fullDiskMetadata?.height || 1024}`} 
+                                 className="absolute inset-0 w-full h-full opacity-40"
+                             >
+                                 {selectedSolarData.crops?.map((d: any, idx: number) => {
+                                     const x = d.x_center_px || 0;
+                                     const y = d.y_center_px || 0;
+                                     const w = d.orig_w_px || 50;
+                                     const h = d.orig_h_px || 50;
+                                     const viewScale = (selectedSolarData.fullDiskMetadata?.width || 1024) / 1024;
+                                     return (
+                                         <rect 
+                                             key={idx} 
+                                             x={x - w/2} 
+                                             y={y - h/2} 
+                                             width={w} 
+                                             height={h} 
+                                             fill="none" 
+                                             stroke="#22c55e" 
+                                             strokeWidth={4 * viewScale} 
+                                         />
+                                     );
+                                 })}
+                             </svg>
                         </div>
                     </div>
 

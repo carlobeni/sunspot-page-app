@@ -135,81 +135,86 @@ export default function SolarDiskViewer({
               />
 
               {imgLoaded && (
-                <svg
-                    viewBox={`0 0 ${solarData.fullDiskMetadata.width || 1024} ${solarData.fullDiskMetadata.height || 1024}`}
-                    className="absolute inset-0 w-full h-full pointer-events-auto"
-                    style={{ zIndex: 5 }}
-                >
-                    <g opacity="0.4" pointerEvents="none" stroke="#fff" strokeWidth="1.5" strokeDasharray="6 4">
-                        {[-60, -30, 0, 30, 60].map(phi => {
-                            const R = (solarData.fullDiskMetadata.width || 1024) / 2;
-                            const x0 = R;
-                            const y0 = R;
-                            const r_p = R * Math.cos(phi * Math.PI / 180);
-                            const y_p = y0 - R * Math.sin(phi * Math.PI / 180);
-                            return (
-                                <g key={`lat-${phi}`}>
-                                    <ellipse cx={x0} cy={y_p} rx={r_p} ry={r_p * 0.15} fill="none" />
-                                    <text x={x0 + r_p + 15} y={y_p + 5} fill="white" fontSize="24" fontWeight="bold" stroke="none" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>{phi}°</text>
-                                </g>
-                            );
-                        })}
-                        {[-60, -30, 0, 30, 60].map(lam => {
-                            const R = (solarData.fullDiskMetadata.width || 1024) / 2;
-                            const x0 = R;
-                            const y0 = R;
-                            const rx = R * Math.sin(lam * Math.PI / 180);
-                            return (
-                                <g key={`lon-${lam}`}>
-                                    <ellipse cx={x0} cy={y0} rx={rx} ry={R} fill="none" />
-                                    <text x={x0 + rx} y={y0 + R + 40} fill="white" fontSize="24" fontWeight="bold" textAnchor="middle" stroke="none" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>{lam}°</text>
-                                </g>
-                            );
-                        })}
-                    </g>
-
-                    {solarData.crops.map((crop) => {
-                    const x = crop.x_center_px;
-                    const y = crop.y_center_px;
-                    const w = crop.orig_w_px || 50;
-                    const h = crop.orig_h_px || 50;
-                    const isHovered = hoveredCrop?.id === crop.id;
-
-                    return (
-                        <g
-                        key={crop.id}
-                        transform={`translate(${x}, ${y})`}
-                        onMouseEnter={() => setHoveredCrop(crop)}
-                        onMouseLeave={() => setHoveredCrop(null)}
-                        className="cursor-crosshair group hover:z-50 relative"
-                        style={{ pointerEvents: 'auto' }}
-                        >
-                        <rect
-                            x={-w / 2}
-                            y={-h / 2}
-                            width={w}
-                            height={h}
-                            stroke={isHovered ? "#22c55e" : "#16a34a"} 
-                            fill={isHovered ? "rgba(34, 197, 94, 0.2)" : "transparent"}
-                            strokeWidth={isHovered ? 6 : 4}
-                            className="transition-all duration-300"
-                        />
-                        <circle r="6" fill="#22c55e" className={isHovered ? "animate-pulse" : ""} />
-                        <text
-                            x={w / 2 + 10}
-                            y={10}
-                            fill="#fff"
-                            fontSize="24"
-                            fontWeight="800"
-                            className={`transition-opacity ${isHovered ? "opacity-100 scale-105" : "opacity-0 group-hover:opacity-100"}`}
-                            style={{ textShadow: '2px 2px 6px rgba(0,0,0,0.9)' }}
-                        >
-                            {crop.mcintosh_full || "Spot"}
-                        </text>
+                (() => {
+                  const viewScale = (solarData.fullDiskMetadata.width || 1024) / 1024;
+                  return (
+                    <svg
+                        viewBox={`0 0 ${solarData.fullDiskMetadata.width || 1024} ${solarData.fullDiskMetadata.height || 1024}`}
+                        className="absolute inset-0 w-full h-full pointer-events-auto"
+                        style={{ zIndex: 5 }}
+                    >
+                        <g opacity="0.4" pointerEvents="none" stroke="#fff" strokeWidth={1.5 * viewScale} strokeDasharray={`${6 * viewScale} ${4 * viewScale}`}>
+                            {[-60, -30, 0, 30, 60].map(phi => {
+                                const R = (solarData.fullDiskMetadata.width || 1024) / 2;
+                                const x0 = R;
+                                const y0 = R;
+                                const r_p = R * Math.cos(phi * Math.PI / 180);
+                                const y_p = y0 - R * Math.sin(phi * Math.PI / 180);
+                                return (
+                                    <g key={`lat-${phi}`}>
+                                        <ellipse cx={x0} cy={y_p} rx={r_p} ry={r_p * 0.15} fill="none" />
+                                        <text x={x0 + r_p + 15 * viewScale} y={y_p + 5 * viewScale} fill="white" fontSize={24 * viewScale} fontWeight="bold" stroke="none" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>{phi}°</text>
+                                    </g>
+                                );
+                            })}
+                            {[-60, -30, 0, 30, 60].map(lam => {
+                                const R = (solarData.fullDiskMetadata.width || 1024) / 2;
+                                const x0 = R;
+                                const y0 = R;
+                                const rx = R * Math.sin(lam * Math.PI / 180);
+                                return (
+                                    <g key={`lon-${lam}`}>
+                                        <ellipse cx={x0} cy={y0} rx={rx} ry={R} fill="none" />
+                                        <text x={x0 + rx} y={y0 + R + 40 * viewScale} fill="white" fontSize={24 * viewScale} fontWeight="bold" textAnchor="middle" stroke="none" style={{ textShadow: '2px 2px 4px rgba(0,0,0,0.8)' }}>{lam}°</text>
+                                    </g>
+                                );
+                            })}
                         </g>
-                    );
-                    })}
-                </svg>
+
+                        {solarData.crops.map((crop) => {
+                        const x = crop.x_center_px;
+                        const y = crop.y_center_px;
+                        const w = crop.orig_w_px || 50;
+                        const h = crop.orig_h_px || 50;
+                        const isHovered = hoveredCrop?.id === crop.id;
+
+                        return (
+                            <g
+                            key={crop.id}
+                            transform={`translate(${x}, ${y})`}
+                            onMouseEnter={() => setHoveredCrop(crop)}
+                            onMouseLeave={() => setHoveredCrop(null)}
+                            className="cursor-crosshair group hover:z-50 relative"
+                            style={{ pointerEvents: 'auto' }}
+                            >
+                            <rect
+                                x={-w / 2}
+                                y={-h / 2}
+                                width={w}
+                                height={h}
+                                stroke={isHovered ? "#22c55e" : "#16a34a"} 
+                                fill={isHovered ? "rgba(34, 197, 94, 0.2)" : "transparent"}
+                                strokeWidth={(isHovered ? 6 : 4) * viewScale}
+                                className="transition-all duration-300"
+                            />
+                            <circle r={6 * viewScale} fill="#22c55e" className={isHovered ? "animate-pulse" : ""} />
+                            <text
+                                x={w / 2 + 10 * viewScale}
+                                y={10 * viewScale}
+                                fill="#fff"
+                                fontSize={24 * viewScale}
+                                fontWeight="800"
+                                className={`transition-opacity ${isHovered ? "opacity-100 scale-105" : "opacity-0 group-hover:opacity-100"}`}
+                                style={{ textShadow: '2px 2px 6px rgba(0,0,0,0.9)' }}
+                            >
+                                {crop.mcintosh_full || "Spot"}
+                            </text>
+                            </g>
+                        );
+                        })}
+                    </svg>
+                  );
+                })()
               )}
             </div>
             

@@ -48,19 +48,29 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       Array.from({ length: 5 }, (_, i) =>
         supabase.from("full_disk_images")
           .select("date_obs, num_crops")
+          .lte("date_obs", "2025-12-31")
           .range(i * pageSize, (i + 1) * pageSize - 1)
       )
     );
-    const disks = diskResults.flatMap(r => r.data || []);
+    const disks = (diskResults.flatMap(r => r.data || [])).filter((d: any) => {
+      if (!d.date_obs) return false;
+      const year = parseInt(d.date_obs.slice(0, 4), 10);
+      return year <= 2025;
+    });
 
     const cropResults = await Promise.all(
       Array.from({ length: 50 }, (_, i) =>
         supabase.from("sunspot_crops")
           .select("date_obs, lat")
+          .lte("date_obs", "2025-12-31")
           .range(i * pageSize, (i + 1) * pageSize - 1)
       )
     );
-    const crops = cropResults.flatMap(r => r.data || []);
+    const crops = (cropResults.flatMap(r => r.data || [])).filter((c: any) => {
+      if (!c.date_obs) return false;
+      const year = parseInt(c.date_obs.slice(0, 4), 10);
+      return year <= 2025;
+    });
 
     // ── 2. Process Monthly SSN and DMD Mesh ───────────────────────────────
     const monthlyMap = new Map<string, { ssn: number; monthsSince2010: number }>();
@@ -71,7 +81,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     disks.forEach((d: any) => {
       if (!d.date_obs) return;
       const dt = new Date(d.date_obs);
-      const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+      const key = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}`;
       const entry = monthlyMap.get(key) ?? { ssn: 0, monthsSince2010: 0 };
       entry.ssn += d.num_crops || 0;
       monthlyMap.set(key, entry);
@@ -86,7 +96,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     crops.forEach((c: any) => {
       if (!c.date_obs || c.lat == null) return;
       const dt = new Date(c.date_obs);
-      const key = `${dt.getFullYear()}-${String(dt.getMonth() + 1).padStart(2, "0")}`;
+      const key = `${dt.getUTCFullYear()}-${String(dt.getUTCMonth() + 1).padStart(2, "0")}`;
       const mIdx = sortedMonthKeys.indexOf(key);
       if (mIdx !== -1) {
         // Precise alignment with 4-degree grid used in binnedMap
@@ -112,7 +122,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     crops.forEach((c: any) => {
       if (!c.date_obs || c.lat == null) return;
       const dt = new Date(c.date_obs);
-      const yearFloat = dt.getFullYear() + (dt.getMonth()) / 12 + dt.getDate() / 365;
+      const yearFloat = dt.getUTCFullYear() + (dt.getUTCMonth()) / 12 + dt.getUTCDate() / 365;
       const bYear = (Math.round(yearFloat * 4) / 4).toFixed(2);
       const bLat  = (Math.round(c.lat / 4) * 4).toFixed(1);
       const key = `${bYear}_${bLat}`;
@@ -163,9 +173,14 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
     for (let i = 1; i <= horizon; i++) {
       const lastMonth = sortedMonths[sortedMonths.length - 1];
-      const nd = new Date(lastMonth.month + "-01");
-      nd.setMonth(nd.getMonth() + i);
-      const yf = nd.getFullYear() + nd.getMonth() / 12;
+      const [lastYear, lastMo] = lastMonth.month.split("-").map(Number);
+      let targetMo = lastMo + i;
+      let targetYr = lastYear;
+      while (targetMo > 12) {
+        targetMo -= 12;
+        targetYr += 1;
+      }
+      const yf = targetYr + (targetMo - 1) / 12;
       const v = getMonthsSinceMin(yf);
       const prevV = getMonthsSinceMin(yf - 1/12);
       const phi = pvlShape(v, a_param, b_param) / Math.max(0.1, pvlShape(prevV, a_param, b_param));
@@ -173,7 +188,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       currentP = phi * phi * currentP + ALPHA_W * currentR;
       const resR = Math.max(0, currentR);
       forecastPredictions.push({
-        month: `${nd.getFullYear()}-${String(nd.getMonth()+1).padStart(2,"0")}`,
+        month: `${targetYr}-${String(targetMo).padStart(2, "0")}`,
         yearFloat: yf,
         kalmanSSN_forecast: resR,
         isForecast: true 

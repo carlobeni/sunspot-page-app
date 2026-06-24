@@ -3,7 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/router";
-import { Telescope, LineChart, Activity, Settings, View, Menu, X, LogOut, Info, Calendar, Home } from "lucide-react";
+import { Telescope, LineChart, Activity, View, Menu, X, LogOut, Info, Calendar, Home } from "lucide-react";
 import { clsx, type ClassValue } from "clsx";
 import { twMerge } from "tailwind-merge";
 
@@ -16,7 +16,6 @@ const navItems = [
   { name: "Observatorio", href: "/observatory", icon: Telescope },
   { name: "Tendencia", href: "/trends", icon: LineChart },
   { name: "Registros", href: "/records", icon: Calendar },
-  { name: "Ajustes", href: "/settings", icon: Settings },
   { name: "Información", href: "/info", icon: Info },
 ];
 
@@ -30,10 +29,7 @@ export function Sidebar() {
   const [isOpen, setIsOpen] = useState(false);
 
   // Filter nav items for guest
-  const filteredNavItems = navItems.filter(item => {
-    if (isGuest && item.href === "/settings") return false;
-    return true;
-  });
+  const filteredNavItems = navItems;
 
   if (['/login', '/register', '/recover'].includes(pathname)) {
     return null;
