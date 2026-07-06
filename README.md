@@ -55,6 +55,6 @@ The prototype was successfully tested in field conditions using:
 
 ### Enclosure Design
 A custom 3D-printed enclosure was designed to protect the Raspberry Pi and accommodate active cooling for sustained outdoor observation.
-![Custom 3D-Printed Case](docs/figures/cad/case_open.png)
+![Custom 3D-Printed Case](docs/figures/solid/case_sin_tapa.png)
 
 *For more details on the theoretical framework and implementation, refer to the full document in the `latex` directory.*
